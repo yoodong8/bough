@@ -306,6 +306,13 @@ export default function App() {
   );
   const [contextMenu, setContextMenu] = useState(null); // {nodeId, x, y}
   const [treeHintVisible, setTreeHintVisible] = useState(true);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      setIsTouchDevice(window.matchMedia("(pointer: coarse)").matches);
+    }
+  }, []);
 
   // Track window width
   useEffect(() => {
@@ -1196,6 +1203,7 @@ export default function App() {
           }
           hintVisible={treeHintVisible}
           onCloseHint={() => setTreeHintVisible(false)}
+          isTouchDevice={isTouchDevice}
         />
       )}
 
@@ -1246,6 +1254,7 @@ export default function App() {
             }
             hintVisible={treeHintVisible}
             onCloseHint={() => setTreeHintVisible(false)}
+          isTouchDevice={isTouchDevice}
           />
         </div>
       )}
@@ -1637,6 +1646,7 @@ function TreePanel({
   onContextMenu,
   hintVisible,
   onCloseHint,
+  isTouchDevice,
 }) {
   // Only render one node per pair (keyed by user message id)
   const allNodes = Object.values(messages).filter(
@@ -1705,12 +1715,17 @@ function TreePanel({
         onHide={onHide}
       />
 
-      <div className="flex-1 overflow-auto p-3 relative border-l border-zinc-800/40">
+      <div className="flex-1 overflow-auto p-3 relative border-l border-zinc-800/40 select-none">
         <svg
           width={width}
           height={height}
           className="block"
-          style={{ overflow: "visible" }}
+          style={{
+            overflow: "visible",
+            WebkitTouchCallout: "none",
+            WebkitUserSelect: "none",
+            userSelect: "none",
+          }}
         >
           {/* Glow underlay for converged path edges */}
           {convergedPathSet &&
@@ -1964,7 +1979,7 @@ function TreePanel({
         >
           <div className="flex items-start gap-2">
             <p className="text-xs text-zinc-500 leading-relaxed flex-1">
-              갈래 끝 점을 길게 눌러
+              갈래 끝 점을 {isTouchDevice ? "길게 눌러" : "우클릭 하여"}
               <br />
               보류·수렴 표시
             </p>
