@@ -1422,6 +1422,8 @@ function MessageBlock({
     );
   }
 
+  const [copied, setCopied] = useState(false);
+
   return (
     <div
       ref={refCallback}
@@ -1435,8 +1437,42 @@ function MessageBlock({
       </div>
 
       <div className="flex items-center gap-0.5 mt-3">
-        <ActionButton title="복사">
-          <Copy className="w-3.5 h-3.5" />
+        <ActionButton
+          title={copied ? "복사됨" : "복사"}
+          onClick={() => {
+            const text = message.content;
+            const showOk = () => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            };
+            const fallback = () => {
+              try {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+                showOk();
+              } catch (e) {}
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+              navigator.clipboard
+                .writeText(text)
+                .then(showOk)
+                .catch(fallback);
+            } else {
+              fallback();
+            }
+          }}
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5" />
+          ) : (
+            <Copy className="w-3.5 h-3.5" />
+          )}
         </ActionButton>
         <ActionButton title="좋은 응답">
           <ThumbsUp className="w-3.5 h-3.5" />
@@ -1518,10 +1554,27 @@ const Composer = forwardRef(function Composer(
   { value, onChange, onSend, disabled },
   ref
 ) {
+  const localRef = useRef(null);
+
+  // Auto-grow vertically with content
+  useEffect(() => {
+    const el = localRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, [value]);
+
+  const setRef = (el) => {
+    localRef.current = el;
+    if (typeof ref === "function") ref(el);
+    else if (ref) ref.current = el;
+  };
+
   return (
     <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-2xl px-4 pt-3 pb-2.5 backdrop-blur shadow-sm focus-within:border-zinc-600/70">
       <textarea
-        ref={ref}
+        ref={setRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
@@ -1533,7 +1586,7 @@ const Composer = forwardRef(function Composer(
         placeholder="메시지를 입력하세요..."
         rows={1}
         disabled={disabled}
-        className="w-full ml-2 mt-0.5 bg-transparent resize-none outline-none text-zinc-100 placeholder-zinc-500 text-base leading-relaxed disabled:opacity-50 max-h-40"
+        className="w-full ml-2 mt-0.5 bg-transparent resize-none outline-none text-zinc-100 placeholder-zinc-500 text-base leading-relaxed disabled:opacity-50 overflow-hidden"
         style={{ minHeight: "24px" }}
       />
       <div className="flex items-center justify-between mt-1.5">
