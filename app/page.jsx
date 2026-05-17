@@ -391,6 +391,7 @@ export default function App() {
   const chatScrollRef = useRef(null);
   const inputRef = useRef(null);
   const lastProgScrollAt = useRef(0);
+  const suppressAutoScrollRef = useRef(false);
 
   const activeConv =
     conversations.find((c) => c.id === activeConvId) || conversations[0];
@@ -626,6 +627,11 @@ export default function App() {
     if (currentPath.length > 0) {
       const last = currentPath[currentPath.length - 1];
       setHighlightedNodeId(last);
+      // Skip auto-scroll if change came from branch switching
+      if (suppressAutoScrollRef.current) {
+        suppressAutoScrollRef.current = false;
+        return;
+      }
       // scroll to bottom on first render / new message
       setTimeout(() => {
         const el = messageRefs.current[last];
@@ -808,6 +814,7 @@ export default function App() {
       if (ch.length === 0) break;
       leaf = ch[0].id;
     }
+    suppressAutoScrollRef.current = true;
     updateActiveConv(() => ({ activeLeafId: leaf }));
   }
 
