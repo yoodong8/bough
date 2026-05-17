@@ -865,7 +865,20 @@ export default function App() {
   }
 
   // ── Click tree node ──
+  const tapTooltipTimerRef = useRef(null);
+
   function handleTreeNodeClick(nodeId) {
+    // On touch devices, briefly show the label tooltip
+    if (isTouchDevice) {
+      setHoveredNodeId(nodeId);
+      if (tapTooltipTimerRef.current)
+        clearTimeout(tapTooltipTimerRef.current);
+      tapTooltipTimerRef.current = setTimeout(() => {
+        setHoveredNodeId(null);
+        tapTooltipTimerRef.current = null;
+      }, 2000);
+    }
+
     if (compareMode) {
       setCompareNodes((prev) => {
         if (prev.includes(nodeId))
@@ -959,6 +972,11 @@ export default function App() {
       }}
     >
       <style>{`
+        html, body {
+          overflow: hidden;
+          overscroll-behavior: none;
+          height: 100%;
+        }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
@@ -1038,7 +1056,7 @@ export default function App() {
         ) : (
           <div
             ref={chatScrollRef}
-            className="flex-1 overflow-y-auto px-6 lg:px-12 pt-8 flex flex-col"
+            className="flex-1 overflow-y-auto overscroll-contain px-6 lg:px-12 pt-8 flex flex-col"
           >
             <div className="max-w-3xl mx-auto space-y-10 w-full mt-auto">
               {currentPath.map((id, idx) => {
