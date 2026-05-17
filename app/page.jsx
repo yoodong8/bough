@@ -937,7 +937,13 @@ export default function App() {
 
   // ── Render ──
   return (
-    <div className="h-screen w-full flex bg-zinc-950 text-zinc-100 overflow-hidden font-sans relative">
+    <div
+      className="h-screen w-full flex bg-zinc-950 text-zinc-100 overflow-hidden font-sans relative"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
       <style>{`
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
