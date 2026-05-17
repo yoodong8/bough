@@ -98,16 +98,16 @@ const SAMPLE_RECENTS = [
 function buildInitialConversations() {
   // pre-built so we can see the tree immediately
   const u1 = nid(), a1 = nid(), u2 = nid(), a2 = nid();
-  // Branch A (left, short, 1 pair) — leaf
+  // Branch A (관계 피로감, 2 pairs) — leaf
   const u3a = nid(), a3a = nid();
-  // Branch B main (right, 6 pairs, with second branch point at u5b)
+  const u4a = nid(), a4a = nid();
+  // Branch B main (5 pairs, with second branch point at u4b)
   const u3b = nid(), a3b = nid();
   const u4b = nid(), a4b = nid();
   const u5b = nid(), a5b = nid();
   const u6b = nid(), a6b = nid();
   const u7b = nid(), a7b = nid();
-  const u8b = nid(), a8b = nid();
-  // Sub-branch from a5b (2 pairs, active leaf)
+  // Branch C — sub-branch from a4b (2 pairs, active leaf)
   const u3c = nid(), a3c = nid();
   const u4c = nid(), a4c = nid();
 
@@ -141,130 +141,130 @@ function buildInitialConversations() {
         "그 감각, 많은 사람이 공감할 거예요. '축하받아야 한다'는 압박, 챙겨야 할 관계의 무게, 한 해 더 먹는 것에 대한 복합적인 마음. 크게 두 갈래로 풀 수 있을 것 같아요 — (1) 나 자신과의 의식으로서의 캔들, 외부 시선에서 잠시 벗어나 스스로를 위한 시간을 만드는 방향. (2) 관계 피로감을 다루는 캔들, 타인을 위해 소모된 자신을 회복하는 방향. 어느 쪽이 더 와닿아요?",
     },
 
-    // ── Branch A — 나를 위한 의식 (leaf) ──
+    // ── Branch A — 관계 피로감 (leaf) ──
     [u3a]: {
       id: u3a,
       parentId: a2,
       role: "user",
-      content: "첫 번째 방향이 좋아. 근데 '의식'이라는 단어가 조금 무겁게 느껴지지 않을까?",
-      branchLabel: "나를 위한 의식",
+      content: "두 번째 방향이 더 끌려. 관계 피로감을 다루는 캔들이 요즘 정서랑 잘 맞을 것 같아.",
+      branchLabel: "관계 피로감",
     },
     [a3a]: {
       id: a3a,
       parentId: u3a,
       role: "assistant",
       content:
-        "그 우려 이해돼요. '의식'이 자칫 종교적이거나 거창하게 들릴 수 있죠. 대안으로 '나에게 켜는 불', '혼자만의 분', '작은 멈춤' 같은 결의 표현이 있어요. 핵심은 '거창하지 않은, 그러나 분명히 자신을 위한 시간'이라는 뉘앙스. 브랜드 네임도 그 결을 따라가면 좋을 것 같아요.",
+        "그 방향도 시장 결과 잘 맞물려요. 관계 피로감은 많이 토로되지만 정작 '회복'으로 풀어내는 오브제 브랜드는 드물거든요. 다만 이 방향은 '누구의 어떤 관계'인지 좁히는 데 시간이 더 필요해요. 가족, 직장, 친구, SNS — 각 결마다 톤이 크게 달라지거든요. 충분히 고민할 가치가 있는 방향이에요.",
+    },
+    [u4a]: {
+      id: u4a,
+      parentId: a3a,
+      role: "user",
+      content: "가족이 가장 무거울 것 같아. 매년 챙겨야 한다는 의무감이 크니까.",
+    },
+    [a4a]: {
+      id: a4a,
+      parentId: u4a,
+      role: "assistant",
+      content:
+        "가족 관계는 보편적이면서도 가장 끈끈한 결이라 잠재 시장이 크지만, 다루기가 가장 조심스러워요. '회복'으로 풀려면 누구에게의 회복인지가 명확해야 — 챙김에 지친 자녀 쪽인지, 챙겨주는 부모 쪽인지에 따라 브랜드 톤이 완전히 달라져요. 좀 더 시간을 두고 페르소나를 좁혀가는 게 좋아 보여요.",
     },
 
-    // ── Branch B — 관계 피로감 (main chain) ──
+    // ── Branch B — 나를 위한 의식 (main chain) ──
     [u3b]: {
       id: u3b,
       parentId: a2,
       role: "user",
-      content: "두 번째 방향이 더 끌려. 관계 피로감을 다루는 캔들이 요즘 정서랑 잘 맞을 것 같아.",
-      branchLabel: "관계 피로감",
+      content: "첫 번째 방향이 좋아. 근데 '의식'이라는 단어가 조금 무겁게 느껴지지 않을까?",
+      branchLabel: "나를 위한 의식",
     },
     [a3b]: {
       id: a3b,
       parentId: u3b,
       role: "assistant",
       content:
-        "그 방향도 시장 결과 잘 맞물려요. 관계 피로감은 많이 토로되지만 정작 '회복'으로 풀어내는 오브제 브랜드는 드물거든요. 다음 단계로 어떤 관계가 가장 무거운지 좁혀볼까요? 가족, 직장, 친구, SNS 상의 느슨한 관계 — 어디에 초점 맞추느냐에 따라 브랜드 톤이 크게 달라질 거예요.",
+        "그 우려 이해돼요. '의식'이 자칫 종교적이거나 거창하게 들릴 수 있죠. 대안으로 '나에게 켜는 불', '혼자만의 분', '작은 멈춤' 같은 결의 표현이 있어요. 핵심은 '거창하지 않은, 그러나 분명히 자신을 위한 시간'이라는 뉘앙스.",
     },
     [u4b]: {
       id: u4b,
       parentId: a3b,
       role: "user",
-      content: "직장이 가장 무거워. 매일 가면 쓰고 사는 느낌이 가장 강한 곳이라.",
+      content: "'작은 멈춤'이라는 표현이 마음에 들어. 이걸 어떻게 브랜드 네임으로 풀어낼 수 있을까?",
     },
     [a4b]: {
       id: a4b,
       parentId: u4b,
       role: "assistant",
       content:
-        "직장은 가면을 가장 오래 쓰는 공간이에요. 그래서 그 가면을 벗는 순간이 곧 캔들을 켜는 순간이 될 수 있어요. 그 '벗는 순간'을 어떻게 정의하고 싶어요? 퇴근 후 집에 들어왔을 때, 회식이 끝났을 때, 또는 회사 건물을 나서는 순간 — 어느 결이 가장 와닿아요?",
+        "직역하면 설명적일 수 있으니 한두 단계 추상화하는 게 좋아요. 단어 자체를 쓰는 방향(한 호흡, 쉼표, 여백)도 있고, 멈춤이 일어나는 시간·공간을 은유하는 방향(저녁 7시, 창가)도 있어요. 어느 결이 더 끌려요?",
     },
     [u5b]: {
       id: u5b,
       parentId: a4b,
       role: "user",
-      content: "퇴근 후 집에 들어왔을 때. 문 닫고 외출복 벗는 그 순간이야.",
+      content: "정황을 은유하는 쪽이 시적이고 좋네. 시간 기반으로 가보면 어때?",
     },
     [a5b]: {
       id: a5b,
       parentId: u5b,
       role: "assistant",
       content:
-        "그 순간이 정확해요. '귀가의 의식'으로 잡으면 점화 트리거가 명확해져요. 집 도착 → 외출복 정리 → 캔들 점화 → 진짜 자신으로의 복귀. 이 흐름을 브랜드 내러티브 축으로 삼으면 단단해져요. 다음으로 향과 형태를 그 순간에 맞춰 정의해볼까요?",
+        "시간은 즉각적으로 장면을 떠올리게 해서 캔들과 잘 맞아요. 다만 '7시'처럼 너무 구체적이면 확장성이 떨어지니, '하루의 끝 무렵' 정도의 감각으로 — 무렵, 기울 무렵, 어스름, 늦오후. 이 중 '무렵'이 여백 있고 한국어 정서와도 잘 맞아 보여요.",
     },
     [u6b]: {
       id: u6b,
       parentId: a5b,
       role: "user",
-      content: "향부터 얘기해보자. 묵직하지만 차분한 결이었으면 좋겠어.",
+      content: "'무렵' 좋다. 보조 카피로 받쳐줄 결도 같이 잡아줘.",
     },
     [a6b]: {
       id: a6b,
       parentId: u6b,
       role: "assistant",
       content:
-        "그 결이라면 베티버, 시더우드, 화이트 머스크가 자연스러워요. 거기에 가죽 노트를 살짝 섞으면 '벗은 외투의 잔향' 같은 후각 이미지가 생겨요. 차분하면서도 존재감 있는 결이라 '귀가'의 감각과 잘 맞아요.",
+        "한 단어가 짧기 때문에 오히려 강한 거고, 보조 카피로 시간성과 감각을 풀어주면 균형이 잡혀요. '무렵 — 하루가 기우는 순간을 위한 캔들' 같은 구조. 제품 라인도 시간대로 시리즈화하면 세계관이 자연스럽게 확장돼요.",
     },
     [u7b]: {
       id: u7b,
       parentId: a6b,
       role: "user",
-      content: "좋아. 그럼 브랜드 네임은 어떤 결로 잡으면 좋을까?",
+      content: "라인업 좀 더 구체적으로 가보자. 어떤 시간대들로 나눌 수 있을까?",
     },
     [a7b]: {
       id: a7b,
       parentId: u7b,
       role: "assistant",
       content:
-        "행위 자체를 압축한 짧은 단어가 좋겠어요. '집', '문' 같은 직접 단어는 평이하니 한 단계 추상화한 후보로 — '문턱', '돌아옴', '비움' 정도가 결에 맞아요. '문턱'은 안팎의 경계를 환기시키고, '비움'은 가면을 벗는 감각과 직결돼요. 어느 쪽이 더 끌려요?",
-    },
-    [u8b]: {
-      id: u8b,
-      parentId: a7b,
-      role: "user",
-      content: "'비움'이 더 끌려. 가면 벗는 감각이랑 잘 맞아.",
-    },
-    [a8b]: {
-      id: a8b,
-      parentId: u8b,
-      role: "assistant",
-      content:
-        "좋은 선택이에요. '비움'은 짧고 강하며, 명사·동사·상태 모두 환기시켜서 카피로 확장하기도 좋아요. '비움 — 하루의 가면을 벗는 시간', '오늘을 비우는 캔들' 같은 라인이 자연스럽게 따라와요. 패키지는 그 결에 맞게 미니멀 무광으로, 컬러는 베이지·오프화이트 톤이 잘 맞을 것 같아요.",
+        "하루의 결을 4~5개로 나누는 게 적당해요. '늦오후의 무렵' — 일과의 끝, '창가의 무렵' — 차 마시는 시간, '문턱의 무렵' — 잠들기 직전. 이런 식으로 시간×장소가 결합된 이름이면 향도 그 결에 맞춰 디자인하기 쉬워요. 첫 출시는 2~3개 라인으로 시작해서 시즌별로 확장하는 게 안전합니다.",
     },
 
-    // ── Branch C — 함께하는 회복 (sub-branch from a5b) ──
+    // ── Branch C — 단어 그 자체 (sub-branch from a4b) ──
     [u3c]: {
       id: u3c,
-      parentId: a5b,
+      parentId: a4b,
       role: "user",
-      content: "잠깐, 다른 방향도 보고 싶어. 혼자가 아니라 가까운 사람과 함께 있을 때를 다루면 어떨까?",
-      branchLabel: "함께하는 회복",
+      content: "단어 자체를 쓰는 방향이 더 직관적이지 않을까? 한 호흡 같은 단어들.",
+      branchLabel: "단어 그 자체",
     },
     [a3c]: {
       id: a3c,
       parentId: u3c,
       role: "assistant",
       content:
-        "그것도 결이 강한 컨셉이에요. '함께 켜는 캔들'은 위로의 매개체가 되거든요. 가까운 사이에서도 말로는 어색한 위로를, 같이 불을 켜는 행위로 대체하는 거죠. 제품도 단품보다 페어 캔들이나 작은 세트로 가면 메시지와 형태가 자연스럽게 일치해요.",
+        "직역에 가까운 단어는 의미가 명확해서 진입장벽이 낮아져요. '한 호흡', '쉼표', '여백', '틈' 같은 후보 중 '여백'은 시각·청각·감각 모두 환기시켜서 캔들의 감각과 가장 맞물려요. 단어 하나로 카피·로고·제품 모두 일관되게 풀 수 있어요.",
     },
     [u4c]: {
       id: u4c,
       parentId: a3c,
       role: "user",
-      content: "페어 캔들 좋다. 그럼 향은 어떻게 잡아야 할까? 두 사람이 함께 켜는 만큼 너무 강하면 안 될 것 같은데.",
+      content: "'여백' 좋다. 근데 너무 흔하지 않을까? 비슷한 결의 브랜드가 이미 있을 것 같은데.",
     },
     [a4c]: {
       id: a4c,
       parentId: u4c,
       role: "assistant",
       content:
-        "정확해요. 페어 캔들은 향이 두 배가 된다고 생각하면 안 되고, '서로의 향이 섞일 여지'를 남기는 게 핵심이에요. 미온한 시트러스나 옅은 플로럴 — 라벤더·일랑일랑 정도가 적당해요. 두 사람의 호흡과 자연스럽게 어우러지면서 공간을 압도하지 않는 결로 가야 '함께'의 부드러움이 살아요.",
+        "차별화하려면 단어를 그대로 쓰기보다 변형 — '여백.오브제', '여백 사이' 같은 결합으로 가거나, 영문 표기로 'YOBAEK'처럼 익숙함을 살짝 비트는 방법이 있어요. 또는 보조 카피로 결을 다르게 — '여백을 채우는 불'처럼 일반적 의미에 새로운 결을 입히는 방향도 가능해요.",
     },
   };
 
@@ -274,11 +274,12 @@ function buildInitialConversations() {
       title: "캔들 오브제 브랜딩",
       messages,
       rootId: u1,
-      activeLeafId: a4c, // active = sub-branch leaf
+      activeLeafId: a4c, // active = Branch C leaf
       nodeStates: {},
     },
   ];
 }
+
 
 // ============================================================
 //   Main App
@@ -1991,7 +1992,8 @@ function NodeContextMenu({ x, y, currentState, onSet, onClose }) {
     >
       {items.map(({ key, icon: Icon, label, placement }) => {
         const isCurrent = currentState === key;
-        const tooltipText = isCurrent ? "취소" : label;
+        const tooltipText =
+          isCurrent && key !== "holding" ? "취소" : label;
         return (
           <div key={key} className="relative">
             <button
