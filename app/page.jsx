@@ -75,6 +75,27 @@ function AppleIcon({
 }
 
 // ============================================================
+// TreeOpenIcon — custom icon for the "open tree panel" action.
+// ============================================================
+function TreeOpenIcon({ className, strokeWidth = 1.5 }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path
+        d="M10.0001 18.3333V7.49994M7.50174 15.0016C6.12091 15.0016 5.00174 13.8524 5.00174 12.4724C4.36082 12.381 3.76855 12.0789 3.31823 11.6138C2.86791 11.1486 2.58515 10.5469 2.5145 9.90333C2.44384 9.25979 2.58931 8.61103 2.92797 8.05927C3.26664 7.5075 3.77926 7.0841 4.38507 6.85577C4.18153 6.40189 4.11801 5.89761 4.20264 5.40743C4.28728 4.91725 4.51622 4.46347 4.86017 4.10412C5.20413 3.74477 5.64747 3.4962 6.13347 3.39021C6.61948 3.28421 7.12606 3.32561 7.58841 3.5091C7.73298 2.98003 8.04748 2.51315 8.48347 2.18038C8.91945 1.8476 9.45275 1.66739 10.0012 1.66748C10.5497 1.66758 11.0829 1.84798 11.5188 2.1809C11.9547 2.51383 12.269 2.98081 12.4134 3.50994C12.8758 3.32644 13.3823 3.28504 13.8683 3.39104C14.3543 3.49704 14.7977 3.74561 15.1416 4.10495C15.4856 4.4643 15.7145 4.91809 15.7992 5.40826C15.8838 5.89844 15.8203 6.40272 15.6167 6.8566C16.2215 7.08561 16.7331 7.50906 17.071 8.06042C17.409 8.61179 17.5542 9.25981 17.4838 9.90266C17.4134 10.5455 17.1314 11.1467 16.6821 11.6119C16.2328 12.0771 15.6418 12.3798 15.0017 12.4724C15.0017 13.8524 13.8826 15.0016 12.5017 15.0016M10.0001 12.4999L12.0834 10.4166M10.0001 10.8333L7.91674 8.74994M8.33341 18.3333H11.6667"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+      />
+    </svg>
+  );
+}
+
+// ============================================================
 // ID generator
 // ============================================================
 let _idCounter = 0;
@@ -1045,7 +1066,7 @@ export default function App() {
                 className="w-7 h-7 rounded-md hover:bg-stone-200/70 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
                 title="노드 트리 보기"
               >
-                <Split className="w-4 h-4 rotate-180" />
+                <TreeOpenIcon className="w-[18px] h-[18px]" />
               </button>
             </>
           )}
@@ -1642,7 +1663,7 @@ const Composer = forwardRef(function Composer(
         placeholder="메시지를 입력하세요..."
         rows={1}
         disabled={disabled}
-        className="w-full ml-1 mt-0.5 bg-transparent resize-none outline-none text-neutral-900 placeholder:text-neutral-400 text-[15px] leading-relaxed max-h-48"
+        className="w-full ml-1 mt-0.5 bg-transparent resize-none outline-none overflow-hidden text-neutral-900 placeholder:text-neutral-400 text-[15px] leading-relaxed"
         style={{ minHeight: "24px" }}
       />
       <div className="flex items-center justify-between mt-1.5">
@@ -1696,6 +1717,27 @@ function TreePanel({
   onCloseHint,
   isTouchDevice,
 }) {
+  const MIN_W = 260;
+  const MAX_W = 520;
+  const [panelWidth, setPanelWidth] = useState(MIN_W);
+
+  const startResize = (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = panelWidth;
+    const onMove = (ev) => {
+      const dx = startX - ev.clientX; // drag left → wider
+      setPanelWidth(Math.min(MAX_W, Math.max(MIN_W, startW + dx)));
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
   const allNodes = Object.values(messages).filter(
     (m) => m.role === "user" && layout[m.id]
   );
@@ -1703,9 +1745,17 @@ function TreePanel({
   if (allNodes.length === 0) {
     return (
       <div
-        className="shrink-0 bg-white border-l border-neutral-200 flex flex-col h-full"
-        style={{ width: "260px" }}
+        className="shrink-0 bg-white border-l border-neutral-200 flex flex-col h-full relative"
+        style={{ width: `${panelWidth}px` }}
       >
+        {!isTouchDevice && (
+          <div
+            className="absolute left-0 top-0 h-full w-3 -translate-x-1/2 cursor-col-resize z-20 group"
+            onMouseDown={startResize}
+          >
+            <div className="absolute left-1/2 -translate-x-1/2 top-0 h-full w-px bg-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        )}
         <TreeHeader
           compareMode={compareMode}
           onToggleCompare={onToggleCompare}
@@ -1752,9 +1802,18 @@ function TreePanel({
 
   return (
     <div
-      className="shrink-0 bg-white border-l border-neutral-200 flex flex-col h-full"
-      style={{ width: "260px" }}
+      className="shrink-0 bg-white border-l border-neutral-200 flex flex-col h-full relative"
+      style={{ width: `${panelWidth}px` }}
     >
+      {/* Resize handle — left border drag, desktop only */}
+      {!isTouchDevice && (
+        <div
+          className="absolute left-0 top-0 h-full w-3 -translate-x-1/2 cursor-col-resize z-20 group"
+          onMouseDown={startResize}
+        >
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 h-full w-px bg-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      )}
       <TreeHeader
         compareMode={compareMode}
         onToggleCompare={onToggleCompare}
@@ -2013,31 +2072,30 @@ function TreePanel({
           })()}
       </div>
 
-      <div className="overflow-hidden shrink-0">
+      {/* Hint — fixed to the bottom of the panel regardless of scroll */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-10">
         <div
-          className={`mx-3 mb-6 mt-1 px-3 py-2.5 rounded-md bg-stone-50 border border-stone-200 transition-all duration-300 ${
+          className={`mx-3 mb-6 px-3 pt-2 pb-2.5 rounded-md bg-stone-50 border border-stone-200 pointer-events-auto transition-all duration-300 ${
             hintVisible
               ? "translate-y-0 opacity-100"
               : "translate-y-full opacity-0 pointer-events-none"
           }`}
         >
-          <div className="flex items-start gap-2">
-            <p className="text-[11px] text-neutral-500 leading-relaxed flex-1">
-              <span className="text-[10px] uppercase tracking-[0.18em] font-mono-ui text-neutral-400 block mb-0.5">
-                Tip
-              </span>
-              갈래 끝 점을 {isTouchDevice ? "길게 눌러" : "우클릭 하여"}
-              <br />
-              보류·수렴 표시
-            </p>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] uppercase tracking-[0.18em] font-mono-ui text-neutral-400 font-medium">
+              Tip
+            </span>
             <button
               onClick={onCloseHint}
-              className="-m-1 p-1 text-neutral-400 hover:text-neutral-700 transition"
+              className="-mr-1 p-1 text-neutral-400 hover:text-neutral-700 transition"
               title="안내 닫기"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
+          <p className="text-[11px] text-neutral-500">
+            갈래 끝 점을 {isTouchDevice ? "길게 눌러" : "우클릭 하여"} 보류·수렴 표시
+          </p>
         </div>
       </div>
     </div>
@@ -2063,7 +2121,7 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
           className="w-7 h-7 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
           title="노드 트리 숨기기"
         >
-          <Split className="w-4 h-4 rotate-180" />
+          <TreeOpenIcon className="w-[18px] h-[18px]" />
         </button>
       </div>
       <div className="px-3 pt-3 pb-2 shrink-0">
@@ -2132,8 +2190,7 @@ function NodeContextMenu({ x, y, currentState, onSet, onClose }) {
     >
       {items.map(({ key, icon: Icon, label, placement, iconProps }) => {
         const isCurrent = currentState === key;
-        const tooltipText =
-          isCurrent && key !== "holding" ? "취소" : label;
+        const tooltipText = label;
         const isConvergedItem = key === "converged";
         return (
           <div key={key} className="relative">
