@@ -375,6 +375,7 @@ export default function App() {
   const [pulsedNodeId, setPulsedNodeId] = useState(null);
   const [treeIntent, setTreeIntent] = useState(true);
   const [sidebarIntent, setSidebarIntent] = useState(true);
+  const [treeWidth, setTreeWidth] = useState(260);
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
@@ -418,6 +419,14 @@ export default function App() {
     wasNarrowRef.current = isNarrow;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNarrow]);
+
+  // Reset tree width to minimum after the close animation finishes
+  useEffect(() => {
+    if (!treeIntent) {
+      const timer = setTimeout(() => setTreeWidth(260), 420);
+      return () => clearTimeout(timer);
+    }
+  }, [treeIntent]);
 
   // Swipe gestures in narrow mode
   useEffect(() => {
@@ -1019,14 +1028,22 @@ export default function App() {
         ::selection { background: #fecaca; color: #171717; }
       `}</style>
 
-      {sidebarVisible && !isNarrow && (
-        <SidebarPanel
-          conversations={conversations}
-          activeConvId={activeConvId}
-          onSelect={setActiveConvId}
-          onNewChat={startNewChat}
-          onCollapse={() => setSidebarIntent(false)}
-        />
+      {!isNarrow && (
+        <div
+          className="shrink-0 h-full overflow-hidden"
+          style={{
+            width: sidebarVisible ? "260px" : "0px",
+            transition: "width 400ms cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          <SidebarPanel
+            conversations={conversations}
+            activeConvId={activeConvId}
+            onSelect={setActiveConvId}
+            onNewChat={startNewChat}
+            onCollapse={() => setSidebarIntent(false)}
+          />
+        </div>
       )}
 
       {/* Main column */}
@@ -1239,60 +1256,14 @@ export default function App() {
       </div>
 
       {/* Wide-mode tree panel */}
-      {treeVisible && !isNarrow && (
-        <TreePanel
-          messages={activeConv.messages}
-          layout={treeLayout}
-          currentPathSet={currentPathSet}
-          currentPath={currentPath}
-          highlightedNodeId={highlightedNodeId}
-          compareMode={compareMode}
-          compareNodes={compareNodes}
-          hoveredNodeId={hoveredNodeId}
-          tapTooltipNodeId={tapTooltipNodeId}
-          onHoverNode={setHoveredNodeId}
-          onClickNode={handleTreeNodeClick}
-          onDoubleClickNode={pulseNode}
-          onToggleCompare={toggleCompare}
-          pendingBranchFromId={pendingBranchFromId}
-          onHide={() => setTreeIntent(false)}
-          nodeStates={activeConv.nodeStates || {}}
-          holdingSet={holdingSet}
-          convergedPathSet={convergedPathSet}
-          isLeafFn={isLeafUserMsg}
-          onContextMenu={(nodeId, x, y) => {
-            setContextMenu({ nodeId, x, y });
-            showLabelBriefly(nodeId);
-          }}
-          hintVisible={treeHintVisible}
-          onCloseHint={() => setTreeHintVisible(false)}
-          isTouchDevice={isTouchDevice}
-        />
-      )}
-
-      {/* Narrow-mode overlays */}
-      {isNarrow && (sidebarVisible || treeVisible) && (
+      {!isNarrow && (
         <div
-          className="absolute inset-0 z-20 bg-neutral-900/15 backdrop-blur-[1px]"
-          onClick={() => {
-            setSidebarIntent(false);
-            setTreeIntent(false);
+          className="shrink-0 h-full overflow-hidden flex justify-end"
+          style={{
+            width: treeVisible ? `${treeWidth}px` : "0px",
+            transition: "width 400ms cubic-bezier(0.16, 1, 0.3, 1)",
           }}
-        />
-      )}
-      {isNarrow && sidebarVisible && (
-        <div className="absolute inset-y-0 left-0 z-30 shadow-[0_0_40px_rgba(0,0,0,0.06)]">
-          <SidebarPanel
-            conversations={conversations}
-            activeConvId={activeConvId}
-            onSelect={setActiveConvId}
-            onNewChat={startNewChat}
-            onCollapse={() => setSidebarIntent(false)}
-          />
-        </div>
-      )}
-      {isNarrow && treeVisible && (
-        <div className="absolute inset-y-0 right-0 z-30 shadow-[0_0_40px_rgba(0,0,0,0.06)]">
+        >
           <TreePanel
             messages={activeConv.messages}
             layout={treeLayout}
@@ -1320,6 +1291,81 @@ export default function App() {
             hintVisible={treeHintVisible}
             onCloseHint={() => setTreeHintVisible(false)}
             isTouchDevice={isTouchDevice}
+            treeWidth={treeWidth}
+            setTreeWidth={setTreeWidth}
+          />
+        </div>
+      )}
+
+      {/* Narrow-mode overlays */}
+      {isNarrow && (
+        <div
+          className="absolute inset-0 z-20 bg-neutral-900/15 backdrop-blur-[1px]"
+          style={{
+            opacity: sidebarVisible || treeVisible ? 1 : 0,
+            pointerEvents: sidebarVisible || treeVisible ? "auto" : "none",
+            transition: "opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+          onClick={() => {
+            setSidebarIntent(false);
+            setTreeIntent(false);
+          }}
+        />
+      )}
+      {isNarrow && (
+        <div
+          className="absolute inset-y-0 left-0 z-30 shadow-[0_0_40px_rgba(0,0,0,0.06)]"
+          style={{
+            transform: sidebarVisible ? "translateX(0)" : "translateX(-100%)",
+            transition: "transform 400ms cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          <SidebarPanel
+            conversations={conversations}
+            activeConvId={activeConvId}
+            onSelect={setActiveConvId}
+            onNewChat={startNewChat}
+            onCollapse={() => setSidebarIntent(false)}
+          />
+        </div>
+      )}
+      {isNarrow && (
+        <div
+          className="absolute inset-y-0 right-0 z-30 shadow-[0_0_40px_rgba(0,0,0,0.06)]"
+          style={{
+            transform: treeVisible ? "translateX(0)" : "translateX(100%)",
+            transition: "transform 400ms cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          <TreePanel
+            messages={activeConv.messages}
+            layout={treeLayout}
+            currentPathSet={currentPathSet}
+            currentPath={currentPath}
+            highlightedNodeId={highlightedNodeId}
+            compareMode={compareMode}
+            compareNodes={compareNodes}
+            hoveredNodeId={hoveredNodeId}
+            tapTooltipNodeId={tapTooltipNodeId}
+            onHoverNode={setHoveredNodeId}
+            onClickNode={handleTreeNodeClick}
+            onDoubleClickNode={pulseNode}
+            onToggleCompare={toggleCompare}
+            pendingBranchFromId={pendingBranchFromId}
+            onHide={() => setTreeIntent(false)}
+            nodeStates={activeConv.nodeStates || {}}
+            holdingSet={holdingSet}
+            convergedPathSet={convergedPathSet}
+            isLeafFn={isLeafUserMsg}
+            onContextMenu={(nodeId, x, y) => {
+              setContextMenu({ nodeId, x, y });
+              showLabelBriefly(nodeId);
+            }}
+            hintVisible={treeHintVisible}
+            onCloseHint={() => setTreeHintVisible(false)}
+            isTouchDevice={isTouchDevice}
+            treeWidth={treeWidth}
+            setTreeWidth={setTreeWidth}
           />
         </div>
       )}
@@ -1716,10 +1762,12 @@ function TreePanel({
   hintVisible,
   onCloseHint,
   isTouchDevice,
+  treeWidth,
+  setTreeWidth,
 }) {
   const MIN_W = 260;
   const MAX_W = 520;
-  const [panelWidth, setPanelWidth] = useState(MIN_W);
+  const panelWidth = treeWidth;
 
   const startResize = (e) => {
     if (e.button !== 0) return;
@@ -1728,7 +1776,7 @@ function TreePanel({
     const startW = panelWidth;
     const onMove = (ev) => {
       const dx = startX - ev.clientX; // drag left → wider
-      setPanelWidth(Math.min(MAX_W, Math.max(MIN_W, startW + dx)));
+      setTreeWidth(Math.min(MAX_W, Math.max(MIN_W, startW + dx)));
     };
     const onUp = () => {
       window.removeEventListener("mousemove", onMove);
