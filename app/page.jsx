@@ -23,10 +23,54 @@ import {
   Check,
   X,
   ListChecks,
-  Flag,
   EyeOff,
   Wrench,
 } from "lucide-react";
+
+// ============================================================
+// AppleIcon — custom two-color icon for the "수렴 / converged" state.
+// Defaults to currentColor (monochrome) so it inherits text color in menus;
+// pass explicit bodyColor / leafColor for the tree visualization.
+// ============================================================
+function AppleIcon({
+  size,
+  bodyColor,
+  leafColor,
+  outline = false,
+  strokeWidth = 1.5,
+  className,
+  ...props
+}) {
+  const bc = bodyColor || "currentColor";
+  const lc = leafColor || "currentColor";
+  const sizeProps = size ? { width: size, height: size } : {};
+  return (
+    <svg
+      {...sizeProps}
+      viewBox="0 0 24 24"
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      {/* Apple body */}
+      <path
+        d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"
+        fill={outline ? "none" : bc}
+        stroke={bc}
+        strokeWidth={strokeWidth}
+      />
+      {/* Leaf — teardrop emerging from the apple's top indent, tilted up-right */}
+      <path
+        d="M10.5 5.5 C 11.5 1.8, 14 0.3, 18 1 C 17 4, 14 5.5, 10.5 5.5 Z"
+        fill={outline ? "none" : lc}
+        stroke={lc}
+        strokeWidth={outline ? strokeWidth : strokeWidth * 0.7}
+      />
+    </svg>
+  );
+}
 
 // ============================================================
 // ID generator
@@ -121,22 +165,20 @@ function buildInitialConversations() {
   const u3c = nid(), a3c = nid();
   const u4c = nid(), a4c = nid();
 
-  // NOTE: demo content strings below were truncated in the source PDF I was given.
-  // Restore from your local original — only the IDs / structure matter for tree behavior.
   const messages = {
     [u1]: {
       id: u1,
       parentId: null,
       role: "user",
       content:
-        "캔들 오브제 브랜드를 시작하려고 하는데 컨셉을 잡기가 어려워. 요즘 사람들이 생일이나 기념일에 대해 느끼는 감정을 …",
+        "캔들 오브제 브랜드를 시작하려고 하는데 컨셉을 잡기가 어려워. 요즘 사람들이 생일이나 기념일에 대해 느끼는 감정을 다뤄보고 싶어.",
     },
     [a1]: {
       id: a1,
       parentId: u1,
       role: "assistant",
       content:
-        "흥미로운 출발점이에요. 생일·기념일은 누구나 겪지만 의외로 양가감정이 많은 순간이잖아요. 떠올리는 결이 더 따뜻한 …",
+        "흥미로운 출발점이에요. 생일·기념일은 누구나 겪지만 의외로 양가감정이 많은 순간이잖아요. 떠올리는 결이 더 따뜻한 쪽인가요, 아니면 약간 무거운 쪽인가요? 사람들이 실제로 어떤 결을 누르며 살고 있는지부터 잡으면 컨셉이 선명해질 거예요.",
     },
     [u2]: {
       id: u2,
@@ -150,7 +192,7 @@ function buildInitialConversations() {
       parentId: u2,
       role: "assistant",
       content:
-        "그 감각, 많은 사람이 공감할 거예요. '축하받아야 한다'는 압박, 챙겨야 할 관계의 무게, 한 해 더 먹는 것에 대한 …",
+        "그 감각, 많은 사람이 공감할 거예요. '축하받아야 한다'는 압박, 챙겨야 할 관계의 무게, 한 해 더 먹는 것에 대한 복합적인 마음. 크게 두 갈래로 풀 수 있을 것 같아요 — (1) 나 자신과의 의식으로서의 캔들, 외부 시선에서 잠시 벗어나 스스로를 위한 시간을 만드는 방향. (2) 관계 피로감을 다루는 캔들, 타인을 위해 소모된 자신을 회복하는 방향. 어느 쪽이 더 와닿아요?",
     },
     // ── Branch A — 관계 피로감 (leaf) ──
     [u3a]: {
@@ -165,7 +207,7 @@ function buildInitialConversations() {
       parentId: u3a,
       role: "assistant",
       content:
-        "그 방향도 시장 결과 잘 맞물려요. 관계 피로감은 많이 토로되지만 정작 '회복'으로 풀어내는 오브제 브랜드는 드물거 …",
+        "그 방향도 시장 결과 잘 맞물려요. 관계 피로감은 많이 토로되지만 정작 '회복'으로 풀어내는 오브제 브랜드는 드물거든요. 다만 이 방향은 '누구의 어떤 관계'인지 좁히는 데 시간이 더 필요해요. 가족, 직장, 친구, SNS — 각 결마다 톤이 크게 달라지거든요. 충분히 고민할 가치가 있는 방향이에요.",
     },
     [u4a]: {
       id: u4a,
@@ -178,7 +220,7 @@ function buildInitialConversations() {
       parentId: u4a,
       role: "assistant",
       content:
-        "가족 관계는 보편적이면서도 가장 끈끈한 결이라 잠재 시장이 크지만, 다루기가 가장 조심스러워요. '회복'으로 풀려면 …",
+        "가족 관계는 보편적이면서도 가장 끈끈한 결이라 잠재 시장이 크지만, 다루기가 가장 조심스러워요. '회복'으로 풀려면 누구에게의 회복인지가 명확해야 — 챙김에 지친 자녀 쪽인지, 챙겨주는 부모 쪽인지에 따라 브랜드 톤이 완전히 달라져요. 좀 더 시간을 두고 페르소나를 좁혀가는 게 좋아 보여요.",
     },
     // ── Branch B — 나를 위한 의식 (main chain) ──
     [u3b]: {
@@ -193,7 +235,7 @@ function buildInitialConversations() {
       parentId: u3b,
       role: "assistant",
       content:
-        "그 우려 이해돼요. '의식'이 자칫 종교적이거나 거창하게 들릴 수 있죠. 대안으로 '나에게 켜는 불', '혼자만의 분 …",
+        "그 우려 이해돼요. '의식'이 자칫 종교적이거나 거창하게 들릴 수 있죠. 대안으로 '나에게 켜는 불', '혼자만의 분', '작은 멈춤' 같은 결의 표현이 있어요. 핵심은 '거창하지 않은, 그러나 분명히 자신을 위한 시간'이라는 뉘앙스.",
     },
     [u4b]: {
       id: u4b,
@@ -206,7 +248,7 @@ function buildInitialConversations() {
       parentId: u4b,
       role: "assistant",
       content:
-        "직역하면 설명적일 수 있으니 한두 단계 추상화하는 게 좋아요. 단어 자체를 쓰는 방향(한 호흡, 쉼표, 여백)도 있고 …",
+        "직역하면 설명적일 수 있으니 한두 단계 추상화하는 게 좋아요. 단어 자체를 쓰는 방향(한 호흡, 쉼표, 여백)도 있고, 멈춤이 일어나는 시간·공간을 은유하는 방향(저녁 7시, 창가)도 있어요. 어느 결이 더 끌려요?",
     },
     [u5b]: {
       id: u5b,
@@ -219,7 +261,7 @@ function buildInitialConversations() {
       parentId: u5b,
       role: "assistant",
       content:
-        "시간은 즉각적으로 장면을 떠올리게 해서 캔들과 잘 맞아요. 다만 '7시'처럼 너무 구체적이면 확장성이 떨어지니, '하 …",
+        "시간은 즉각적으로 장면을 떠올리게 해서 캔들과 잘 맞아요. 다만 '7시'처럼 너무 구체적이면 확장성이 떨어지니, '하루의 끝 무렵' 정도의 감각으로 — 무렵, 기울 무렵, 어스름, 늦오후. 이 중 '무렵'이 여백 있고 한국어 정서와도 잘 맞아 보여요.",
     },
     [u6b]: {
       id: u6b,
@@ -232,7 +274,7 @@ function buildInitialConversations() {
       parentId: u6b,
       role: "assistant",
       content:
-        "한 단어가 짧기 때문에 오히려 강한 거고, 보조 카피로 시간성과 감각을 풀어주면 균형이 잡혀요. '무렵 — 하루가 기 …",
+        "한 단어가 짧기 때문에 오히려 강한 거고, 보조 카피로 시간성과 감각을 풀어주면 균형이 잡혀요. '무렵 — 하루가 기우는 순간을 위한 캔들' 같은 구조. 제품 라인도 시간대로 시리즈화하면 세계관이 자연스럽게 확장돼요.",
     },
     [u7b]: {
       id: u7b,
@@ -245,7 +287,7 @@ function buildInitialConversations() {
       parentId: u7b,
       role: "assistant",
       content:
-        "하루의 결을 4~5개로 나누는 게 적당해요. '늦오후의 무렵' — 일과의 끝, '창가의 무렵' — 차 마시는 시간, '문턱 …",
+        "하루의 결을 4~5개로 나누는 게 적당해요. '늦오후의 무렵' — 일과의 끝, '창가의 무렵' — 차 마시는 시간, '문턱의 무렵' — 잠들기 직전. 이런 식으로 시간×장소가 결합된 이름이면 향도 그 결에 맞춰 디자인하기 쉬워요. 첫 출시는 2~3개 라인으로 시작해서 시즌별로 확장하는 게 안전합니다.",
     },
     // ── Branch C — 단어 그 자체 (sub-branch from a4b) ──
     [u3c]: {
@@ -260,7 +302,7 @@ function buildInitialConversations() {
       parentId: u3c,
       role: "assistant",
       content:
-        "직역에 가까운 단어는 의미가 명확해서 진입장벽이 낮아져요. '한 호흡', '쉼표', '여백', '틈' 같은 후보 중 '여 …",
+        "직역에 가까운 단어는 의미가 명확해서 진입장벽이 낮아져요. '한 호흡', '쉼표', '여백', '틈' 같은 후보 중 '여백'은 시각·청각·감각 모두 환기시켜서 캔들의 감각과 가장 맞물려요. 단어 하나로 카피·로고·제품 모두 일관되게 풀 수 있어요.",
     },
     [u4c]: {
       id: u4c,
@@ -273,7 +315,7 @@ function buildInitialConversations() {
       parentId: u4c,
       role: "assistant",
       content:
-        "차별화하려면 단어를 그대로 쓰기보다 변형 — '여백.오브제', '여백 사이' 같은 결합으로 가거나, 영문 표기로 'YO …",
+        "차별화하려면 단어를 그대로 쓰기보다 변형 — '여백.오브제', '여백 사이' 같은 결합으로 가거나, 영문 표기로 'YOBAEK'처럼 익숙함을 살짝 비트는 방법이 있어요. 또는 보조 카피로 결을 다르게 — '여백을 채우는 불'처럼 일반적 의미에 새로운 결을 입히는 방향도 가능해요.",
     },
   };
 
@@ -332,18 +374,14 @@ export default function App() {
   }, []);
 
   // Narrow layout: panels overlay the chat instead of pushing it.
-  // Threshold = 2 panels (260 each) + minimum chat width (360) = 880
   const NARROW_THRESHOLD = 880;
   const isNarrow = windowWidth < NARROW_THRESHOLD;
 
-  // Snapshot of pre-narrow panel state, restored when window grows back.
-  // Actions taken inside narrow mode do not propagate back to wide.
   const wasNarrowRef = useRef(false);
   const snapshotRef = useRef({ sidebar: true, tree: true });
 
   useEffect(() => {
     if (isNarrow && !wasNarrowRef.current) {
-      // Entering narrow mode: snapshot current, auto-collapse both
       snapshotRef.current = {
         sidebar: sidebarIntent,
         tree: treeIntent,
@@ -351,17 +389,14 @@ export default function App() {
       setSidebarIntent(false);
       setTreeIntent(false);
     } else if (!isNarrow && wasNarrowRef.current) {
-      // Leaving narrow mode: restore snapshot
       setSidebarIntent(snapshotRef.current.sidebar);
       setTreeIntent(snapshotRef.current.tree);
     }
     wasNarrowRef.current = isNarrow;
-    // intentionally omitting sidebarIntent/treeIntent from deps
-    // so this only fires on narrow boundary changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNarrow]);
 
-  // Swipe gestures in narrow mode: right→open sidebar/close tree, left→open tree/close sidebar
+  // Swipe gestures in narrow mode
   useEffect(() => {
     if (!isNarrow || typeof window === "undefined") return;
     let startX = 0,
@@ -382,11 +417,9 @@ export default function App() {
       if (Math.abs(dx) < 60) return;
       if (Math.abs(dy) > 50) return;
       if (dx > 0) {
-        // swipe right: close tree if open, else open sidebar
         if (treeIntent) setTreeIntent(false);
         else if (!sidebarIntent) setSidebarIntent(true);
       } else {
-        // swipe left: close sidebar if open, else open tree
         if (sidebarIntent) setSidebarIntent(false);
         else if (!treeIntent) setTreeIntent(true);
       }
@@ -399,7 +432,6 @@ export default function App() {
     };
   }, [isNarrow, sidebarIntent, treeIntent]);
 
-  // Effective visibility = intent (narrow uses overlay, no width constraint)
   const sidebarVisible = sidebarIntent;
   const treeVisible = treeIntent;
 
@@ -412,7 +444,6 @@ export default function App() {
   const activeConv =
     conversations.find((c) => c.id === activeConvId) || conversations[0];
 
-  // Path from root → leaf
   const currentPath = useMemo(() => {
     if (!activeConv.activeLeafId) return [];
     const path = [];
@@ -429,13 +460,11 @@ export default function App() {
     [currentPath]
   );
 
-  // Set of user-msg ids that are part of any holding sub-branch
   const holdingSet = useMemo(() => {
     const out = new Set();
     const states = activeConv.nodeStates || {};
     Object.keys(states).forEach((id) => {
       if (states[id] !== "holding") return;
-      // walk up to most recent divergence
       const msgs = activeConv.messages;
       let cur = id;
       while (cur && msgs[cur]?.role === "user") {
@@ -452,13 +481,11 @@ export default function App() {
     return out;
   }, [activeConv.nodeStates, activeConv.messages]);
 
-  // The current converged leaf user-msg id (or null)
   const convergedLeafId = useMemo(() => {
     const states = activeConv.nodeStates || {};
     return Object.keys(states).find((k) => states[k] === "converged") || null;
   }, [activeConv.nodeStates]);
 
-  // Set of user-msg ids on the root-to-converged-leaf path (for glow)
   const convergedPathSet = useMemo(() => {
     const out = new Set();
     if (!convergedLeafId) return out;
@@ -471,11 +498,9 @@ export default function App() {
     return out;
   }, [convergedLeafId, activeConv.messages]);
 
-  // Is the current active path on a holding branch?
   const isOnHoldingLeaf = useMemo(() => {
     const leaf = activeConv.activeLeafId;
     if (!leaf) return false;
-    // Active leaf is an AI msg; its parent user msg may be marked holding
     const msgs = activeConv.messages;
     const lastUser =
       msgs[leaf]?.role === "user" ? leaf : msgs[leaf]?.parentId;
@@ -488,10 +513,6 @@ export default function App() {
       .sort((a, b) => (a.id < b.id ? -1 : 1));
   }
 
-  // Returns true if the given user message has no descendant user messages
-  // (i.e. its AI response has no children) — i.e. it's a leaf of the tree.
-  // Also returns true if it's a branch point whose all descendant leaves are
-  // marked 'holding' (so the user can right-click to mark/unmark this point too).
   function isLeafUserMsg(userMsgId) {
     const msgs = activeConv.messages;
     const states = activeConv.nodeStates || {};
@@ -503,7 +524,6 @@ export default function App() {
       (m) => m.parentId === aiChild.id && m.role === "user"
     );
     if (grand.length === 0) return true;
-    // Branch point — check if every descendant real leaf is marked holding
     const leaves = [];
     function walk(uid) {
       const ai = Object.values(msgs).find(
@@ -527,10 +547,6 @@ export default function App() {
     return leaves.every((id) => states[id] === "holding");
   }
 
-  // From a leaf user msg, walk up until the most recent divergence point
-  // (an AI message that has multiple user children). Returns the list of
-  // user-message ids on the diverged sub-branch (inclusive of leaf), in
-  // chronological order. If there's no divergence, returns the whole chain.
   function getDivergedSubpath(leafUserId) {
     const msgs = activeConv.messages;
     const result = [];
@@ -542,8 +558,8 @@ export default function App() {
       const userChildren = Object.values(msgs).filter(
         (m) => m.parentId === ai.id && m.role === "user"
       );
-      if (userChildren.length > 1) break; // ai is a divergence point
-      cur = ai.parentId; // walk up to grandparent user msg
+      if (userChildren.length > 1) break;
+      cur = ai.parentId;
     }
     return result;
   }
@@ -553,11 +569,9 @@ export default function App() {
   }
 
   function setNodeState(userMsgId, state) {
-    // state: "holding" | "converged" | null
     updateActiveConv((c) => {
       const next = { ...(c.nodeStates || {}) };
       if (state === "converged") {
-        // Clear any prior converged node
         Object.keys(next).forEach((k) => {
           if (next[k] === "converged") delete next[k];
         });
@@ -585,17 +599,14 @@ export default function App() {
     if (!root) return;
 
     function onScroll() {
-      // Don't override during programmatic scroll
       if (Date.now() - lastProgScrollAt.current < 700) return;
 
-      // When scrolled all the way to the top, snap to first message
       if (root.scrollTop < 20 && currentPath.length > 0) {
         const first = currentPath[0];
         if (first && first !== highlightedNodeId) setHighlightedNodeId(first);
         return;
       }
 
-      // When scrolled all the way to the bottom, snap to last user message
       if (
         root.scrollTop + root.clientHeight >= root.scrollHeight - 20 &&
         currentPath.length > 0
@@ -636,19 +647,16 @@ export default function App() {
     return () => root.removeEventListener("scroll", onScroll);
   }, [currentPath, highlightedNodeId]);
 
-  // ── On path change, highlight last node ──
   useEffect(() => {
     if (currentPath.length > 0) {
       const last = currentPath[currentPath.length - 1];
       setHighlightedNodeId(last);
 
-      // Skip auto-scroll if change came from branch switching
       if (suppressAutoScrollRef.current) {
         suppressAutoScrollRef.current = false;
         return;
       }
 
-      // scroll to bottom on first render / new message
       setTimeout(() => {
         const el = messageRefs.current[last];
         if (el && chatScrollRef.current) {
@@ -664,7 +672,7 @@ export default function App() {
   async function handleSend() {
     const text = input.trim();
     if (!text || isLoading) return;
-    if (isOnHoldingLeaf) return; // safety
+    if (isOnHoldingLeaf) return;
 
     setInput("");
 
@@ -674,7 +682,6 @@ export default function App() {
       : activeConv.activeLeafId;
     setPendingBranchFromId(null);
 
-    // First message of a fresh chat → fire off a title generation in the background
     const isFirstMessageOfNewChat =
       activeConv.title === "새 대화" && parentId === null;
 
@@ -687,7 +694,6 @@ export default function App() {
       ...(isBranching ? { branchLabel: "..." } : {}),
     };
 
-    // If continuing the converged path (not branching), transfer convergence to new node
     const parentAi = parentId ? activeConv.messages[parentId] : null;
     const continuingConverged =
       !isBranching &&
@@ -712,7 +718,6 @@ export default function App() {
 
     setIsLoading(true);
     try {
-      // Build context from root → parent → new user msg
       const ctx = [];
       let cursor = parentId;
       const ancestors = [];
@@ -741,7 +746,6 @@ export default function App() {
         activeLeafId: aiMsgId,
       }));
 
-      // Async branch label generation
       if (isBranching) {
         const label = await generateBranchLabel(text);
         updateActiveConv((c) => ({
@@ -752,7 +756,6 @@ export default function App() {
         }));
       }
 
-      // Auto-generate chat title from first message of a fresh chat
       if (isFirstMessageOfNewChat) {
         generateBranchLabel(text).then((title) => {
           if (title && title !== "새 갈래") {
@@ -792,9 +795,6 @@ export default function App() {
     setPendingBranchFromId(null);
   }
 
-  // ── Sibling navigation ──
-  // For an AI message, look at its parent (user msg). If that user msg has siblings,
-  // we can switch between branches.
   function getSiblingInfo(messageId) {
     const m = activeConv.messages[messageId];
     if (!m || m.role !== "assistant") return null;
@@ -818,7 +818,6 @@ export default function App() {
     let newIdx = idx + direction;
     if (newIdx < 0) newIdx = branches.length - 1;
     if (newIdx >= branches.length) newIdx = 0;
-    // Follow first child to leaf
     let leaf = branches[newIdx].id;
     while (true) {
       const ch = getChildren(leaf);
@@ -829,7 +828,7 @@ export default function App() {
     updateActiveConv(() => ({ activeLeafId: leaf }));
   }
 
-  // ── Tree layout (one node per user+AI pair; keyed by user message id) ──
+  // ── Tree layout ──
   const treeLayout = useMemo(() => {
     const positions = {};
     let nextCol = 0;
@@ -837,12 +836,10 @@ export default function App() {
 
     function visit(userId, col, depth) {
       positions[userId] = { col, depth };
-      // Find the AI response for this user message
       const aiMsg = Object.values(msgs).find(
         (m) => m.parentId === userId && m.role === "assistant"
       );
       if (!aiMsg) return;
-      // Next-level pairs = user messages branching from this AI message
       const childUsers = Object.values(msgs)
         .filter((m) => m.parentId === aiMsg.id && m.role === "user")
         .sort((a, b) => (a.id < b.id ? -1 : 1));
@@ -868,9 +865,6 @@ export default function App() {
     );
   }
 
-  // ── Tap/click tooltip — show label for 1.2s, hover keeps it visible ──
-  // (hoveredNodeId is for hover; tapTooltipNodeId is for tap/click/long-press.
-  //  TreePanel renders the tooltip if either matches.)
   const tapTooltipTimerRef = useRef(null);
   function showLabelBriefly(nodeId) {
     setTapTooltipNodeId(nodeId);
@@ -881,10 +875,7 @@ export default function App() {
     }, 1200);
   }
 
-  // ── Click tree node ──
   function handleTreeNodeClick(nodeId) {
-    // Briefly show the label tooltip on tap/click (1.2s).
-    // Hover state is independent, so if the cursor is on the node the tooltip stays.
     showLabelBriefly(nodeId);
 
     if (compareMode) {
@@ -897,18 +888,15 @@ export default function App() {
       return;
     }
 
-    // Re-click on already highlighted node → pulse accent then fade back
     if (nodeId === highlightedNodeId) {
       pulseNode(nodeId);
       return;
     }
 
-    // Switch active path so it goes through nodeId
     let leaf = nodeId;
     while (true) {
       const ch = getChildren(leaf);
       if (ch.length === 0) break;
-      // Prefer current path child if available, else first
       let next = ch[0];
       for (const c of ch) {
         if (currentPathSet.has(c.id)) {
@@ -974,23 +962,38 @@ export default function App() {
   // ── Render ──
   return (
     <div
-      className="h-screen w-full flex bg-zinc-950 text-zinc-100 overflow-hidden font-sans relative"
+      className="h-screen w-full flex bg-stone-50 text-neutral-900 overflow-hidden relative"
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
+        fontFamily:
+          "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', sans-serif",
+        fontFeatureSettings: "'ss01', 'ss02', 'cv01', 'cv11'",
       }}
     >
       <style>{`
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
         html, body {
           overflow: hidden;
           overscroll-behavior: none;
           height: 100%;
+          background: #fafaf9;
+          color: #171717;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+        .font-mono-ui {
+          font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+          font-feature-settings: 'ss01', 'ss02';
         }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-        * { scrollbar-width: thin; scrollbar-color: #27272a transparent; }
+        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+        * { scrollbar-width: thin; scrollbar-color: #d6d3d1 transparent; }
+        ::selection { background: #fecaca; color: #171717; }
       `}</style>
 
       {sidebarVisible && !isNarrow && (
@@ -1012,32 +1015,32 @@ export default function App() {
         }`}
       >
         {/* Top bar */}
-        <div className="h-14 flex items-center px-4 sm:px-6 border-b border-zinc-800/30 shrink-0 gap-2">
+        <div className="h-14 flex items-center px-4 sm:px-6 border-b border-neutral-200 shrink-0 gap-2 bg-stone-50/80 backdrop-blur-sm">
           {!sidebarVisible && (
             <button
               onClick={() => setSidebarIntent(true)}
-              className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
+              className="w-7 h-7 rounded-md hover:bg-stone-200/70 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
               title="메뉴 열기"
             >
               <PanelLeft className="w-4 h-4" />
             </button>
           )}
-          <button className="flex items-center gap-1.5 text-base text-zinc-200 hover:text-zinc-100">
+          <button className="flex items-center gap-1.5 text-[15px] text-neutral-900 hover:text-neutral-700 font-medium tracking-tight">
             <span>{activeConv.title}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+            <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
           </button>
           <div className="flex-1" />
           {!treeVisible && (
             <>
               <button
-                className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
+                className="w-7 h-7 rounded-md hover:bg-stone-200/70 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
                 title="대화 공유"
               >
                 <Share2 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setTreeIntent(true)}
-                className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
+                className="w-7 h-7 rounded-md hover:bg-stone-200/70 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
                 title="노드 트리 보기"
               >
                 <Split className="w-4 h-4 rotate-180" />
@@ -1055,10 +1058,13 @@ export default function App() {
             windowWidth={windowWidth}
           />
         ) : currentPath.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-center text-zinc-500 px-6">
+          <div className="flex-1 flex items-center justify-center text-center text-neutral-500 px-6">
             <div>
-              <p className="text-lg mb-2">새 대화를 시작해 보세요</p>
-              <p className="text-sm">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-400 mb-3 font-mono-ui">
+                Empty
+              </p>
+              <p className="text-xl mb-2 text-neutral-900 tracking-tight">새 대화를 시작해 보세요</p>
+              <p className="text-sm text-neutral-500">
                 AI 메시지의 분기 아이콘을 누르면 새 갈래로 이어집니다.
               </p>
             </div>
@@ -1076,7 +1082,6 @@ export default function App() {
                   ? currentPath.indexOf(pendingBranchFromId)
                   : -1;
 
-                // For holding path: find most recent divergence (AI w/ multiple user children)
                 let divergenceAtIdx = -1;
                 if (isOnHoldingLeaf) {
                   for (let i = 0; i <= idx; i++) {
@@ -1109,8 +1114,6 @@ export default function App() {
                 const extraTop =
                   m.role === "user" && prevMsg?.role === "assistant";
 
-                // Branch-switch nav appears between the branch-source AI and
-                // the user message that's part of one of the branches.
                 let navEl = null;
                 if (m.role === "user" && m.parentId) {
                   const branches = getChildren(m.parentId);
@@ -1118,23 +1121,25 @@ export default function App() {
                     const branchIdx = branches.findIndex((b) => b.id === id);
                     navEl = (
                       <div className="flex justify-center -my-2">
-                        <div className="flex items-center gap-0.5 px-2 py-1 rounded-lg bg-amber-500/10 text-amber-300/90 text-xs">
+                        <div className="flex items-center gap-0.5 px-2.5 py-1 rounded-md bg-white border border-neutral-200 text-neutral-700 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                           <button
                             onClick={() => switchBranchAt(m.parentId, -1)}
-                            className="hover:text-amber-100 p-1 rounded"
+                            className="hover:text-neutral-900 p-1 rounded transition"
                             title="이전 갈래"
                           >
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeft className="w-3.5 h-3.5" />
                           </button>
-                          <span className="font-medium px-1">
-                            {branchIdx + 1} / {branches.length}
+                          <span className="font-mono-ui font-medium px-1.5 tabular-nums tracking-tight text-[11px]">
+                            <span className="text-red-600">{branchIdx + 1}</span>
+                            <span className="text-neutral-300 mx-0.5">/</span>
+                            <span className="text-neutral-500">{branches.length}</span>
                           </span>
                           <button
                             onClick={() => switchBranchAt(m.parentId, 1)}
-                            className="hover:text-amber-100 p-1 rounded"
+                            className="hover:text-neutral-900 p-1 rounded transition"
                             title="다음 갈래"
                           >
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -1164,7 +1169,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Composer (hidden in compare mode) */}
+        {/* Composer */}
         {!compareMode && (
           <div
             className="px-6 lg:px-12 pb-6 pt-5 shrink-0"
@@ -1176,23 +1181,25 @@ export default function App() {
           >
             <div className="max-w-3xl mx-auto">
               {pendingBranchFromId && (
-                <div className="flex items-center gap-2 mb-2 text-xs px-3 py-2 bg-amber-500/10 text-amber-200 rounded-lg">
-                  <Split className="w-3.5 h-3.5 rotate-180" />
-                  <span>
-                    이 메시지에서 새 갈래로 이어집니다. 메시지를 입력해
-                    분기를 시작하세요.
+                <div className="flex items-center gap-2.5 mb-2 text-xs px-3 py-2.5 bg-white border border-red-200/70 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0" />
+                  <span className="text-neutral-700">
+                    이 메시지에서 새 갈래로 이어집니다. 메시지를 입력해 분기를 시작하세요.
                   </span>
                   <button
                     onClick={cancelBranch}
-                    className="ml-auto hover:text-amber-100 px-1.5 py-0.5 rounded hover:bg-amber-500/20"
+                    className="ml-auto text-neutral-500 hover:text-neutral-900 px-2 py-0.5 rounded text-[11px] uppercase tracking-wider font-medium transition"
                   >
                     취소
                   </button>
                 </div>
               )}
               {isOnHoldingLeaf ? (
-                <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl px-4 py-4 text-sm text-zinc-500 text-center">
-                  보류된 갈래입니다.
+                <div className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-4 text-sm text-neutral-500 text-center">
+                  <span className="text-[11px] uppercase tracking-[0.18em] text-neutral-400 font-mono-ui">
+                    On Hold
+                  </span>
+                  <div className="mt-1">보류된 갈래입니다.</div>
                 </div>
               ) : (
                 <Composer
@@ -1208,7 +1215,7 @@ export default function App() {
         )}
       </div>
 
-      {/* Wide-mode tree panel (flex sibling, pushes layout) */}
+      {/* Wide-mode tree panel */}
       {treeVisible && !isNarrow && (
         <TreePanel
           messages={activeConv.messages}
@@ -1243,7 +1250,7 @@ export default function App() {
       {/* Narrow-mode overlays */}
       {isNarrow && (sidebarVisible || treeVisible) && (
         <div
-          className="absolute inset-0 z-20 bg-black/30"
+          className="absolute inset-0 z-20 bg-neutral-900/15 backdrop-blur-[1px]"
           onClick={() => {
             setSidebarIntent(false);
             setTreeIntent(false);
@@ -1251,7 +1258,7 @@ export default function App() {
         />
       )}
       {isNarrow && sidebarVisible && (
-        <div className="absolute inset-y-0 left-0 z-30 shadow-2xl">
+        <div className="absolute inset-y-0 left-0 z-30 shadow-[0_0_40px_rgba(0,0,0,0.06)]">
           <SidebarPanel
             conversations={conversations}
             activeConvId={activeConvId}
@@ -1262,7 +1269,7 @@ export default function App() {
         </div>
       )}
       {isNarrow && treeVisible && (
-        <div className="absolute inset-y-0 right-0 z-30 shadow-2xl">
+        <div className="absolute inset-y-0 right-0 z-30 shadow-[0_0_40px_rgba(0,0,0,0.06)]">
           <TreePanel
             messages={activeConv.messages}
             layout={treeLayout}
@@ -1329,40 +1336,40 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
 
   return (
     <div
-      className="shrink-0 bg-zinc-950 border-r border-zinc-800/40 flex flex-col h-full"
+      className="shrink-0 bg-white border-r border-neutral-200 flex flex-col h-full"
       style={{ width: "260px" }}
     >
-      {/* Tab pill (Chat / list / code) with panel + search on the left */}
+      {/* Tab pill */}
       <div className="px-3 pt-4 flex items-center gap-1">
         <button
           onClick={onCollapse}
-          className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
+          className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
           title="메뉴 닫기"
         >
           <PanelLeft className="w-4 h-4" />
         </button>
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200">
+        <button className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition">
           <Search className="w-4 h-4" />
         </button>
-        <button className="flex-1 h-9 rounded-lg bg-zinc-800/70 flex items-center justify-center gap-1.5 text-sm text-zinc-200">
+        <button className="flex-1 h-9 rounded-md bg-stone-100 border border-stone-200 flex items-center justify-center gap-1.5 text-sm text-neutral-900 font-medium">
           <MessageSquare className="w-4 h-4" />
           Chat
         </button>
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200">
+        <button className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition">
           <ListChecks className="w-4 h-4" />
         </button>
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200">
+        <button className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition">
           <Code2 className="w-4 h-4" />
         </button>
       </div>
 
       {/* Main items */}
-      <div className="px-3 mt-4 space-y-0.5 text-sm">
+      <div className="px-3 mt-5 space-y-0.5 text-sm">
         <button
           onClick={onNewChat}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-zinc-800/40"
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-neutral-900 hover:bg-stone-100 transition"
         >
-          <Plus className="w-4 h-4 text-zinc-400" />
+          <Plus className="w-4 h-4 text-neutral-500" />
           <span>New chat</span>
         </button>
         <SidebarItem icon={<FolderOpen className="w-4 h-4" />} label="Projects" />
@@ -1371,8 +1378,9 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
       </div>
 
       {/* Recents */}
-      <div className="px-4 mt-5 mb-1.5 text-xs uppercase text-zinc-500 tracking-wider font-medium">
-        Recents
+      <div className="px-4 mt-6 mb-2 text-[10px] uppercase text-neutral-400 tracking-[0.2em] font-mono-ui font-medium flex items-center gap-2">
+        <span>Recents</span>
+        <span className="flex-1 h-px bg-neutral-200" />
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5 text-sm">
         {recentItems.map(({ key, title, conv }) => {
@@ -1381,10 +1389,10 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
             <button
               key={key}
               onClick={() => conv && onSelect(conv.id)}
-              className={`w-full text-left px-2.5 py-1.5 rounded-lg truncate transition ${
+              className={`w-full text-left px-2.5 py-2 rounded-md truncate transition ${
                 isActive
-                  ? "bg-zinc-800/70 text-zinc-400"
-                  : "text-zinc-500/70 hover:text-zinc-300 hover:bg-zinc-800/30"
+                  ? "bg-stone-100 text-neutral-900 font-medium"
+                  : "text-neutral-500 hover:text-neutral-900 hover:bg-stone-50"
               }`}
             >
               {title}
@@ -1394,14 +1402,17 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-3 border-t border-zinc-800/40 flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-full bg-orange-700/90 flex items-center justify-center text-xs text-white font-medium">
+      <div className="px-3 py-3 border-t border-neutral-200 flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-md bg-neutral-900 flex items-center justify-center text-xs text-white font-medium font-mono-ui">
           P
         </div>
-        <div className="text-xs text-zinc-300 flex-1 truncate">
-          파이 <span className="text-zinc-500">· Pro</span>
+        <div className="text-[13px] text-neutral-900 flex-1 truncate">
+          파이{" "}
+          <span className="text-neutral-400 font-mono-ui text-[11px] tracking-wider uppercase ml-0.5">
+            · Pro
+          </span>
         </div>
-        <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+        <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
       </div>
     </div>
   );
@@ -1409,8 +1420,8 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
 
 function SidebarItem({ icon, label }) {
   return (
-    <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-zinc-800/40">
-      <span className="text-zinc-400">{icon}</span>
+    <button className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-neutral-900 hover:bg-stone-100 transition">
+      <span className="text-neutral-500">{icon}</span>
       <span>{label}</span>
     </button>
   );
@@ -1435,16 +1446,16 @@ function MessageBlock({
   if (message.role === "user") {
     let boxShadow, transition;
     if (isPulsed) {
-      // Pulse overrides any other state briefly with a quick amber outline
-      boxShadow = "0 0 0 1.5px rgb(245 158 11)";
+      boxShadow = "0 0 0 1.5px rgb(220 38 38)";
       transition = "box-shadow 150ms ease-out";
     } else if (isConvergedGlow) {
-      boxShadow = "0 0 18px 2px rgba(251, 191, 36, 0.45)";
+      boxShadow = "0 0 0 1px rgb(220 38 38 / 0.5), 0 0 22px 2px rgba(220, 38, 38, 0.18)";
       transition = "box-shadow 800ms ease-out";
     } else if (isHighlighted) {
-      boxShadow = "0 0 0 1px rgb(82 82 91)";
+      boxShadow = "0 0 0 1px rgb(168 162 158)";
       transition = "box-shadow 1000ms ease-out";
     } else {
+      boxShadow = "0 0 0 1px rgb(231 229 228)";
       transition = "box-shadow 1000ms ease-out";
     }
 
@@ -1453,12 +1464,12 @@ function MessageBlock({
         ref={refCallback}
         data-msg-id={message.id}
         className={`flex justify-end transition-opacity duration-300 ${
-          dimmed ? "opacity-25" : ""
+          dimmed ? "opacity-30" : ""
         }`}
         style={extraTop ? { marginTop: "60px" } : undefined}
       >
         <div
-          className="px-4 py-3 rounded-2xl bg-zinc-800/80 text-zinc-100 whitespace-pre-wrap break-words text-[15px] leading-relaxed"
+          className="px-4 py-3 rounded-xl bg-white text-neutral-900 whitespace-pre-wrap break-words text-[15px] leading-relaxed"
           style={{ maxWidth: "80%", boxShadow, transition }}
         >
           {message.content}
@@ -1473,11 +1484,11 @@ function MessageBlock({
     <div
       ref={refCallback}
       data-msg-id={message.id}
-      className={`group transition-opacity duration-300 ${
-        dimmed ? "opacity-25" : ""
+      className={`group pl-3 transition-opacity duration-300 ${
+        dimmed ? "opacity-30" : ""
       }`}
     >
-      <div className="text-zinc-200 whitespace-pre-wrap break-words text-base leading-relaxed">
+      <div className="text-neutral-800 whitespace-pre-wrap break-words text-[15px] leading-[1.75]">
         {message.content}
       </div>
       <div className="flex items-center gap-0.5 mt-3">
@@ -1564,15 +1575,15 @@ function ActionButton({ children, title, onClick, highlighted }) {
         onMouseLeave={() => setHovered(false)}
         className={`w-7 h-7 rounded-md flex items-center justify-center transition ${
           highlighted
-            ? "bg-amber-500/20 text-amber-300"
-            : "text-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-300"
+            ? "bg-red-50 text-red-600 ring-1 ring-red-200"
+            : "text-neutral-400 hover:bg-stone-100 hover:text-neutral-700"
         }`}
       >
         {children}
       </button>
       {hovered && tooltipPos && (
         <div
-          className="fixed -translate-x-1/2 px-2 py-1 rounded-md bg-zinc-800 text-zinc-100 text-xs whitespace-nowrap pointer-events-none z-50"
+          className="fixed -translate-x-1/2 px-2 py-1 rounded-md bg-neutral-900 text-white text-[11px] whitespace-nowrap pointer-events-none z-50 font-medium"
           style={{ left: tooltipPos.left, top: tooltipPos.top }}
         >
           {title}
@@ -1584,9 +1595,9 @@ function ActionButton({ children, title, onClick, highlighted }) {
 
 function LoadingIndicator() {
   return (
-    <div className="flex items-center gap-2 text-zinc-500 text-sm py-2">
+    <div className="flex items-center gap-2 text-neutral-400 text-sm py-2">
       <Loader2 className="w-4 h-4 animate-spin" />
-      <span>생각하는 중...</span>
+      <span className="text-[11px] uppercase tracking-[0.18em] font-mono-ui">Thinking</span>
     </div>
   );
 }
@@ -1600,7 +1611,6 @@ const Composer = forwardRef(function Composer(
 ) {
   const localRef = useRef(null);
 
-  // Auto-grow vertically with content
   useEffect(() => {
     const el = localRef.current;
     if (el) {
@@ -1616,7 +1626,7 @@ const Composer = forwardRef(function Composer(
   };
 
   return (
-    <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-2xl px-4 pt-3 pb-2.5 backdrop-blur-sm">
+    <div className="bg-white border border-neutral-200 rounded-xl px-4 pt-3 pb-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] focus-within:border-neutral-400 transition-colors">
       <textarea
         ref={setRef}
         value={value}
@@ -1630,22 +1640,22 @@ const Composer = forwardRef(function Composer(
         placeholder="메시지를 입력하세요..."
         rows={1}
         disabled={disabled}
-        className="w-full ml-2 mt-0.5 bg-transparent resize-none outline-none text-zinc-100 placeholder:text-zinc-500 text-[15px] leading-relaxed max-h-48"
+        className="w-full ml-1 mt-0.5 bg-transparent resize-none outline-none text-neutral-900 placeholder:text-neutral-400 text-[15px] leading-relaxed max-h-48"
         style={{ minHeight: "24px" }}
       />
       <div className="flex items-center justify-between mt-1.5">
-        <button className="w-8 h-8 -ml-1 rounded-lg flex items-center justify-center text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200">
+        <button className="w-8 h-8 -ml-1 rounded-md flex items-center justify-center text-neutral-500 hover:bg-stone-100 hover:text-neutral-900 transition">
           <Plus className="w-4 h-4" />
         </button>
-        <div className="flex items-center gap-1.5">
-          <button className="flex items-center gap-1 text-xs text-zinc-400 px-2 py-1 rounded-md hover:bg-zinc-800/60 hover:text-zinc-200">
+        <div className="flex items-center gap-1">
+          <button className="flex items-center gap-1 text-[11px] text-neutral-500 px-2 py-1 rounded-md hover:bg-stone-100 hover:text-neutral-900 font-mono-ui uppercase tracking-wider transition">
             <span>Phi 1.0</span>
             <ChevronDown className="w-3 h-3" />
           </button>
           <button
             onClick={onSend}
             disabled={disabled || !value.trim()}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-500 hover:bg-stone-100 hover:text-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition"
             title="보내기 (Enter)"
           >
             <Mic className="w-4 h-4" />
@@ -1684,7 +1694,6 @@ function TreePanel({
   onCloseHint,
   isTouchDevice,
 }) {
-  // Only render one node per pair (keyed by user message id)
   const allNodes = Object.values(messages).filter(
     (m) => m.role === "user" && layout[m.id]
   );
@@ -1692,7 +1701,7 @@ function TreePanel({
   if (allNodes.length === 0) {
     return (
       <div
-        className="shrink-0 bg-zinc-950 flex flex-col h-full"
+        className="shrink-0 bg-white border-l border-neutral-200 flex flex-col h-full"
         style={{ width: "260px" }}
       >
         <TreeHeader
@@ -1701,7 +1710,7 @@ function TreePanel({
           compareCount={compareNodes.length}
           onHide={onHide}
         />
-        <div className="flex-1 flex items-center justify-center pb-32 text-xs text-zinc-600 px-4 text-center">
+        <div className="flex-1 flex items-center justify-center pb-32 text-xs text-neutral-400 px-4 text-center">
           대화를 시작하면 여기에 갈래가 그려져요.
         </div>
       </div>
@@ -1727,7 +1736,6 @@ function TreePanel({
     };
   }
 
-  // Pending branch — dim path nodes after branch point
   const pendingIdx = pendingBranchFromId
     ? currentPath.indexOf(pendingBranchFromId)
     : -1;
@@ -1738,13 +1746,11 @@ function TreePanel({
     }
   }
 
-  // Effective tooltip target: hover wins (so a still-hovered node keeps showing).
-  // Tap-tooltip is a secondary source so click/long-press also surfaces the label.
   const tooltipNodeId = hoveredNodeId || tapTooltipNodeId;
 
   return (
     <div
-      className="shrink-0 bg-zinc-950 flex flex-col h-full"
+      className="shrink-0 bg-white border-l border-neutral-200 flex flex-col h-full"
       style={{ width: "260px" }}
     >
       <TreeHeader
@@ -1753,7 +1759,7 @@ function TreePanel({
         compareCount={compareNodes.length}
         onHide={onHide}
       />
-      <div className="flex-1 overflow-auto p-3 relative border-l border-zinc-800/40 select-none">
+      <div className="flex-1 overflow-auto p-3 relative select-none">
         <svg
           width={width}
           height={height}
@@ -1787,8 +1793,8 @@ function TreePanel({
                 <path
                   key={`glow-e-${m.id}`}
                   d={d}
-                  stroke="#fbbf24"
-                  strokeOpacity="0.35"
+                  stroke="#dc2626"
+                  strokeOpacity="0.18"
                   strokeWidth="6"
                   fill="none"
                   strokeLinecap="round"
@@ -1796,14 +1802,11 @@ function TreePanel({
               );
             })}
 
-          {/* Edges (pair → parent pair) */}
+          {/* Edges */}
           {allNodes.map((m) => {
-            // m is a user msg; its parent in the tree is the previous pair's user msg
-            // = m.parentId (AI msg) .parentId (previous user msg)
             const aiParent = m.parentId ? messages[m.parentId] : null;
             const parentPairId = aiParent ? aiParent.parentId : null;
             if (!parentPairId) return null;
-            // Skip edges entering a holding sub-branch
             if (holdingSet && holdingSet.has(m.id)) return null;
             const p = pos(parentPairId);
             const c = pos(m.id);
@@ -1817,13 +1820,12 @@ function TreePanel({
               convergedPathSet.has(m.id) &&
               convergedPathSet.has(parentPairId);
             const stroke = dimmed
-              ? "#27272a"
+              ? "#e7e5e4"
               : inConverged
-              ? "#fbbf24"
+              ? "#dc2626"
               : inActivePath
-              ? "#a1a1aa"
-              : "#3f3f46";
-            // Path: vertical if same col, S-curve otherwise
+              ? "#171717"
+              : "#d6d3d1";
             const d =
               p.x === c.x
                 ? `M ${p.x} ${p.y + 6} L ${c.x} ${c.y - 6}`
@@ -1835,7 +1837,7 @@ function TreePanel({
                 key={`e-${m.id}`}
                 d={d}
                 stroke={stroke}
-                strokeWidth="1.4"
+                strokeWidth={inActivePath || inConverged ? "1.5" : "1.2"}
                 fill="none"
                 className="transition-all duration-300"
               />
@@ -1861,21 +1863,26 @@ function TreePanel({
               convergedPathSet && convergedPathSet.has(m.id);
             const isLeaf = isLeafFn ? isLeafFn(m.id) : false;
 
+            // Fill hierarchy:
+            // - red (#dc2626): marked states (branch src pending, compare selected, converged)
+            // - black (#171717): you are here (highlighted)
+            // - mid-gray (#525252): on active path but not highlighted
+            // - light gray (#d6d3d1): not on path
+            // - dimmed (#e7e5e4): pending-branch dim or holding subtree
             let fill;
-            if (isCompareSel) fill = "#fbbf24";
-            else if (isBranchSrc) fill = "#fbbf24";
-            else if (isConverged) fill = "#fbbf24";
-            else if (isHighlight) fill = "#fafafa";
-            else if (inPath) fill = "#d4d4d8";
-            else fill = "#52525b";
-            if (dimmed) fill = "#3f3f46";
-            // Holding branch points are darker than dim
-            if (inHoldingBranch && !isHolding) fill = "#27272a";
+            if (isCompareSel) fill = "#dc2626";
+            else if (isBranchSrc) fill = "#dc2626";
+            else if (isConverged) fill = "#dc2626";
+            else if (isHighlight) fill = "#171717";
+            else if (inPath) fill = "#525252";
+            else fill = "#d6d3d1";
+            if (dimmed) fill = "#e7e5e4";
+            if (inHoldingBranch && !isHolding) fill = "#e7e5e4";
 
             const r =
               isHighlight || isHover || isCompareSel || isBranchSrc
-                ? 9
-                : 6;
+                ? 8
+                : 5;
 
             const handleContextMenu = (e) => {
               if (!isLeaf || !onContextMenu) return;
@@ -1884,7 +1891,6 @@ function TreePanel({
               onContextMenu(m.id, e.clientX, e.clientY);
             };
 
-            // Long-press for touch devices
             let pressTimer = null;
             const handleTouchStart = (e) => {
               if (!isLeaf || !onContextMenu) return;
@@ -1926,19 +1932,18 @@ function TreePanel({
                     cy={p.y}
                     r={r + 4}
                     fill="none"
-                    stroke={isCompareSel || isBranchSrc ? "#fbbf24" : "#fafafa"}
-                    strokeOpacity="0.25"
+                    stroke={isCompareSel || isBranchSrc ? "#dc2626" : "#171717"}
+                    strokeOpacity={isCompareSel || isBranchSrc ? "0.3" : "0.18"}
                     strokeWidth="1"
                   />
                 )}
-                {/* Glow ring under converged node */}
                 {isConverged && (
                   <circle
                     cx={p.x}
                     cy={p.y}
                     r={14}
-                    fill="#fbbf24"
-                    fillOpacity="0.18"
+                    fill="#dc2626"
+                    fillOpacity="0.12"
                     className="pointer-events-none"
                   />
                 )}
@@ -1951,17 +1956,18 @@ function TreePanel({
                       className="pointer-events-none transition-all duration-200"
                     >
                       {isConverged ? (
-                        <Flag
-                          width={size}
-                          height={size}
-                          stroke="#fbbf24"
-                          fill="#fbbf24"
+                        <AppleIcon
+                          size={size}
+                          bodyColor="#dc2626"
+                          leafColor="#16a34a"
+                          strokeWidth={1.5}
                         />
                       ) : (
                         <EyeOff
                           width={size}
                           height={size}
-                          stroke="#52525b"
+                          stroke="#a8a29e"
+                          strokeWidth={1.5}
                         />
                       )}
                     </g>
@@ -1980,7 +1986,7 @@ function TreePanel({
           })}
         </svg>
 
-        {/* Label tooltip — visible while hovering OR briefly after tap/click/long-press */}
+        {/* Label tooltip */}
         {tooltipNodeId &&
           (() => {
             const m = messages[tooltipNodeId];
@@ -1991,11 +1997,9 @@ function TreePanel({
               (m.role === "user"
                 ? m.content.slice(0, 16) + (m.content.length > 16 ? "…" : "")
                 : "AI 응답");
-            // place the tooltip relative to the scrolling container — using
-            // the container's padding (12) + svg position
             return (
               <div
-                className="absolute pointer-events-none px-2 py-1 bg-zinc-800 text-zinc-100 text-xs rounded-md whitespace-nowrap z-30 shadow-lg"
+                className="absolute pointer-events-none px-2 py-1 bg-neutral-900 text-white text-[11px] rounded-md whitespace-nowrap z-30 shadow-lg font-medium"
                 style={{
                   left: `${12 + p.x + 14}px`,
                   top: `${12 + p.y - 10}px`,
@@ -2009,21 +2013,24 @@ function TreePanel({
 
       <div className="overflow-hidden shrink-0">
         <div
-          className={`mx-3 mb-6 mt-1 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60 transition-all duration-300 ${
+          className={`mx-3 mb-6 mt-1 px-3 py-2.5 rounded-md bg-stone-50 border border-stone-200 transition-all duration-300 ${
             hintVisible
               ? "translate-y-0 opacity-100"
               : "translate-y-full opacity-0 pointer-events-none"
           }`}
         >
           <div className="flex items-start gap-2">
-            <p className="text-xs text-zinc-500 leading-relaxed flex-1">
+            <p className="text-[11px] text-neutral-500 leading-relaxed flex-1">
+              <span className="text-[10px] uppercase tracking-[0.18em] font-mono-ui text-neutral-400 block mb-0.5">
+                Tip
+              </span>
               갈래 끝 점을 {isTouchDevice ? "길게 눌러" : "우클릭 하여"}
               <br />
               보류·수렴 표시
             </p>
             <button
               onClick={onCloseHint}
-              className="-m-1 p-1 text-zinc-600 hover:text-zinc-300 transition"
+              className="-m-1 p-1 text-neutral-400 hover:text-neutral-700 transition"
               title="안내 닫기"
             >
               <X className="w-3.5 h-3.5" />
@@ -2038,37 +2045,43 @@ function TreePanel({
 function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
   return (
     <>
-      <div className="h-14 flex items-center px-4 border-b border-zinc-800/30 gap-2 shrink-0">
+      <div className="h-14 flex items-center px-4 border-b border-neutral-200 gap-2 shrink-0">
+        <span className="text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
+          Tree
+        </span>
         <div className="flex-1" />
         <button
-          className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
+          className="w-7 h-7 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
           title="대화 공유"
         >
           <Share2 className="w-4 h-4" />
         </button>
         <button
           onClick={onHide}
-          className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
+          className="w-7 h-7 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
           title="노드 트리 숨기기"
         >
           <Split className="w-4 h-4 rotate-180" />
         </button>
       </div>
-      <div className="px-3 pt-3 pb-2 shrink-0 border-l border-zinc-800/40">
+      <div className="px-3 pt-3 pb-2 shrink-0">
         <button
           onClick={onToggleCompare}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition ${
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-md border text-sm transition ${
             compareMode
-              ? "bg-zinc-800/80 border-zinc-700 text-zinc-100"
-              : "bg-zinc-900/40 border-zinc-800/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+              ? "bg-neutral-900 border-neutral-900 text-white"
+              : "bg-white border-neutral-200 text-neutral-700 hover:text-neutral-900 hover:border-neutral-300"
           }`}
         >
-          <span>분할 비교</span>
+          <span className="font-medium">분할 비교</span>
           <Toggle on={compareMode} />
         </button>
         {compareMode && (
-          <div className="text-xs text-zinc-500 mt-2 px-1 leading-relaxed">
-            트리에서 비교할 두 점을 선택하세요 ({compareCount}/2)
+          <div className="text-[11px] text-neutral-500 mt-2 px-1 leading-relaxed">
+            트리에서 비교할 두 점을 선택하세요{" "}
+            <span className="font-mono-ui text-neutral-900 tabular-nums">
+              ({compareCount}/2)
+            </span>
           </div>
         )}
       </div>
@@ -2077,12 +2090,11 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
 }
 
 // ============================================================
-// Node Context Menu (right-click on a leaf in the tree)
+// Node Context Menu
 // ============================================================
 function NodeContextMenu({ x, y, currentState, onSet, onClose }) {
   const [hovered, setHovered] = useState(null);
 
-  // Close on outside click / Escape
   useEffect(() => {
     function onDown(e) {
       if (!e.target.closest?.("[data-context-menu]")) onClose();
@@ -2099,38 +2111,47 @@ function NodeContextMenu({ x, y, currentState, onSet, onClose }) {
   }, [onClose]);
 
   const items = [
-    { key: "converged", icon: Flag, label: "수렴", placement: "top" },
+    {
+      key: "converged",
+      icon: AppleIcon,
+      label: "수렴",
+      placement: "top",
+      iconProps: { outline: true, strokeWidth: 2 },
+    },
     { key: "holding", icon: EyeOff, label: "보류", placement: "bottom" },
   ];
 
   return (
     <div
       data-context-menu
-      className="fixed z-50 flex flex-col gap-1 p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 shadow-xl"
+      className="fixed z-50 flex flex-col gap-1 p-1.5 rounded-lg bg-white border border-neutral-200 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
       style={{ left: x, top: y }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {items.map(({ key, icon: Icon, label, placement }) => {
+      {items.map(({ key, icon: Icon, label, placement, iconProps }) => {
         const isCurrent = currentState === key;
         const tooltipText =
           isCurrent && key !== "holding" ? "취소" : label;
+        const isConvergedItem = key === "converged";
         return (
           <div key={key} className="relative">
             <button
               onClick={() => onSet(isCurrent ? null : key)}
               onMouseEnter={() => setHovered(key)}
               onMouseLeave={() => setHovered(null)}
-              className={`w-9 h-9 rounded-md flex items-center justify-center transition ${
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition ${
                 isCurrent
-                  ? "bg-amber-500/25 text-amber-300"
-                  : "text-zinc-300 hover:bg-zinc-800"
+                  ? isConvergedItem
+                    ? "bg-red-50 text-red-600 ring-1 ring-red-200"
+                    : "bg-stone-100 text-neutral-900 ring-1 ring-neutral-300"
+                  : "text-neutral-600 hover:bg-stone-100 hover:text-neutral-900"
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" {...(iconProps || {})} />
             </button>
             {hovered === key && (
               <div
-                className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-md bg-zinc-800 text-zinc-100 text-xs whitespace-nowrap pointer-events-none ${
+                className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-md bg-neutral-900 text-white text-[11px] whitespace-nowrap pointer-events-none font-medium ${
                   placement === "top"
                     ? "bottom-full mb-1.5"
                     : "top-full mt-1.5"
@@ -2150,11 +2171,13 @@ function Toggle({ on }) {
   return (
     <div
       className={`w-9 h-5 rounded-full transition relative ${
-        on ? "bg-amber-500" : "bg-zinc-700"
+        on ? "bg-white" : "bg-neutral-200"
       }`}
     >
       <div
-        className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow"
+        className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${
+          on ? "bg-neutral-900" : "bg-white shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
+        }`}
         style={{ left: on ? "18px" : "2px" }}
       />
     </div>
@@ -2184,7 +2207,6 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
       >
         {nodes.map((nodeId, i) => {
           const path = getPathTo(nodeId);
-          // The tree node id is the user message of a pair; also include its AI response
           const last = path[path.length - 1];
           if (messages[last]?.role === "user") {
             const aiChild = Object.values(messages).find(
@@ -2193,7 +2215,6 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
             if (aiChild) path.push(aiChild.id);
           }
           const node = messages[nodeId];
-          // try to find the branch label by walking up to a node with a branchLabel
           let lbl = null;
           let cur = nodeId;
           while (cur) {
@@ -2207,15 +2228,23 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
           return (
             <div
               key={nodeId}
-              className="bg-zinc-900/30 rounded-xl border border-zinc-800/50 flex flex-col min-h-0 flex-1"
+              className="bg-white rounded-xl border border-neutral-200 flex flex-col min-h-0 flex-1 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
             >
-              <div className="text-xs text-amber-400 px-4 pt-4 pb-3 font-medium uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                {lbl || `갈래 ${i + 1}`}
+              <div className="px-5 pt-4 pb-3 border-b border-neutral-100 flex items-center gap-3">
+                <span className="font-mono-ui text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-medium">
+                  Branch {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="h-px flex-1 bg-neutral-200" />
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                  <span className="text-[13px] text-neutral-900 font-medium tracking-tight">
+                    {lbl || `갈래 ${i + 1}`}
+                  </span>
+                </span>
               </div>
               <div
                 ref={(el) => (scrollRefs.current[i] = el)}
-                className="flex-1 overflow-y-auto px-4 pb-4 space-y-3 min-h-0"
+                className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0"
               >
                 {path.map((id) => {
                   const m = messages[id];
@@ -2224,7 +2253,7 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
                     return (
                       <div key={id} className="flex justify-end">
                         <div
-                          className="px-3 py-2 rounded-xl bg-zinc-800 text-zinc-100 text-sm whitespace-pre-wrap break-words"
+                          className="px-3 py-2 rounded-lg bg-stone-100 text-neutral-900 text-sm whitespace-pre-wrap break-words border border-stone-200"
                           style={{ maxWidth: "90%" }}
                         >
                           {m.content}
@@ -2235,7 +2264,7 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
                   return (
                     <div
                       key={id}
-                      className="text-zinc-200 text-sm whitespace-pre-wrap leading-relaxed"
+                      className="text-neutral-800 text-sm whitespace-pre-wrap leading-[1.75]"
                     >
                       {m.content}
                     </div>
