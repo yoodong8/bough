@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useRef, useMemo, forwardRef, Fragment } from "react";
 import {
   Plus,
@@ -31,14 +29,14 @@ import {
 } from "lucide-react";
 
 // ============================================================
-//   ID generator
+// ID generator
 // ============================================================
 let _idCounter = 0;
 const nid = (p = "m") =>
   `${p}-${Date.now().toString(36)}-${++_idCounter}`;
 
 // ============================================================
-//   LLM API
+// LLM API
 // ============================================================
 const SYSTEM_PROMPT = `당신은 친근한 한국어 AI 어시스턴트입니다.
 사용자의 아이디에이션과 브레인스토밍을 도와주세요.
@@ -51,34 +49,46 @@ async function callLLM(messages, opts = {}) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      system: opts.system || SYSTEM_PROMPT,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      maxTokens: opts.maxTokens || 800,
     }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
-  return data.text || "";
+  return data.text || data.content?.find((b) => b.type === "text")?.text || "";
 }
 
 async function generateBranchLabel(userText) {
   try {
-    const res = await fetch("/api/branch-label", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userText }),
-    });
-    if (!res.ok) return "새 갈래";
-    const data = await res.json();
-    return (data.label || "새 갈래").slice(0, 14);
+    const result = await callLLM(
+      [
+        {
+          role: "user",
+          content: `다음 사용자 발화를 2~3 단어의 짧은 라벨(명사구)로 압축해 주세요. 따옴표나 설명 없이 라벨만 출력해주세요.\n\n발화: ${userText}`,
+        },
+      ],
+      {
+        maxTokens: 30,
+        system: "간결한 라벨러. 2-3 단어 명사구로만 응답합니다.",
+      }
+    );
+    return (
+      result
+        .trim()
+        .replace(/^["'`「『]+|["'`」』.,]+$/g, "")
+        .slice(0, 14) || "새 갈래"
+    );
   } catch {
     return "새 갈래";
   }
 }
 
 // ============================================================
-//   Initial demo data
+// Initial demo data
 // ============================================================
 const SAMPLE_RECENTS = [
-  "채팅 LLM의 인지적 마찰 정의 및 인터랙션 설",
+  "채팅 LLM의 인지적 마찰 정의 및 인터랙션 설계",
   "캔들 오브제 브랜딩",
   "교사의 회의감과 선한 영향력",
   "인터뷰 스크립트 편집 및 음성인식 오류 수정",
@@ -111,20 +121,22 @@ function buildInitialConversations() {
   const u3c = nid(), a3c = nid();
   const u4c = nid(), a4c = nid();
 
+  // NOTE: demo content strings below were truncated in the source PDF I was given.
+  // Restore from your local original — only the IDs / structure matter for tree behavior.
   const messages = {
     [u1]: {
       id: u1,
       parentId: null,
       role: "user",
       content:
-        "캔들 오브제 브랜드를 시작하려고 하는데 컨셉을 잡기가 어려워. 요즘 사람들이 생일이나 기념일에 대해 느끼는 감정을 다뤄보고 싶어.",
+        "캔들 오브제 브랜드를 시작하려고 하는데 컨셉을 잡기가 어려워. 요즘 사람들이 생일이나 기념일에 대해 느끼는 감정을 …",
     },
     [a1]: {
       id: a1,
       parentId: u1,
       role: "assistant",
       content:
-        "흥미로운 출발점이에요. 생일·기념일은 누구나 겪지만 의외로 양가감정이 많은 순간이잖아요. 떠올리는 결이 더 따뜻한 쪽인가요, 아니면 약간 무거운 쪽인가요? 사람들이 실제로 어떤 결을 누르며 살고 있는지부터 잡으면 컨셉이 선명해질 거예요.",
+        "흥미로운 출발점이에요. 생일·기념일은 누구나 겪지만 의외로 양가감정이 많은 순간이잖아요. 떠올리는 결이 더 따뜻한 …",
     },
     [u2]: {
       id: u2,
@@ -138,9 +150,8 @@ function buildInitialConversations() {
       parentId: u2,
       role: "assistant",
       content:
-        "그 감각, 많은 사람이 공감할 거예요. '축하받아야 한다'는 압박, 챙겨야 할 관계의 무게, 한 해 더 먹는 것에 대한 복합적인 마음. 크게 두 갈래로 풀 수 있을 것 같아요 — (1) 나 자신과의 의식으로서의 캔들, 외부 시선에서 잠시 벗어나 스스로를 위한 시간을 만드는 방향. (2) 관계 피로감을 다루는 캔들, 타인을 위해 소모된 자신을 회복하는 방향. 어느 쪽이 더 와닿아요?",
+        "그 감각, 많은 사람이 공감할 거예요. '축하받아야 한다'는 압박, 챙겨야 할 관계의 무게, 한 해 더 먹는 것에 대한 …",
     },
-
     // ── Branch A — 관계 피로감 (leaf) ──
     [u3a]: {
       id: u3a,
@@ -154,7 +165,7 @@ function buildInitialConversations() {
       parentId: u3a,
       role: "assistant",
       content:
-        "그 방향도 시장 결과 잘 맞물려요. 관계 피로감은 많이 토로되지만 정작 '회복'으로 풀어내는 오브제 브랜드는 드물거든요. 다만 이 방향은 '누구의 어떤 관계'인지 좁히는 데 시간이 더 필요해요. 가족, 직장, 친구, SNS — 각 결마다 톤이 크게 달라지거든요. 충분히 고민할 가치가 있는 방향이에요.",
+        "그 방향도 시장 결과 잘 맞물려요. 관계 피로감은 많이 토로되지만 정작 '회복'으로 풀어내는 오브제 브랜드는 드물거 …",
     },
     [u4a]: {
       id: u4a,
@@ -167,9 +178,8 @@ function buildInitialConversations() {
       parentId: u4a,
       role: "assistant",
       content:
-        "가족 관계는 보편적이면서도 가장 끈끈한 결이라 잠재 시장이 크지만, 다루기가 가장 조심스러워요. '회복'으로 풀려면 누구에게의 회복인지가 명확해야 — 챙김에 지친 자녀 쪽인지, 챙겨주는 부모 쪽인지에 따라 브랜드 톤이 완전히 달라져요. 좀 더 시간을 두고 페르소나를 좁혀가는 게 좋아 보여요.",
+        "가족 관계는 보편적이면서도 가장 끈끈한 결이라 잠재 시장이 크지만, 다루기가 가장 조심스러워요. '회복'으로 풀려면 …",
     },
-
     // ── Branch B — 나를 위한 의식 (main chain) ──
     [u3b]: {
       id: u3b,
@@ -183,7 +193,7 @@ function buildInitialConversations() {
       parentId: u3b,
       role: "assistant",
       content:
-        "그 우려 이해돼요. '의식'이 자칫 종교적이거나 거창하게 들릴 수 있죠. 대안으로 '나에게 켜는 불', '혼자만의 분', '작은 멈춤' 같은 결의 표현이 있어요. 핵심은 '거창하지 않은, 그러나 분명히 자신을 위한 시간'이라는 뉘앙스.",
+        "그 우려 이해돼요. '의식'이 자칫 종교적이거나 거창하게 들릴 수 있죠. 대안으로 '나에게 켜는 불', '혼자만의 분 …",
     },
     [u4b]: {
       id: u4b,
@@ -196,7 +206,7 @@ function buildInitialConversations() {
       parentId: u4b,
       role: "assistant",
       content:
-        "직역하면 설명적일 수 있으니 한두 단계 추상화하는 게 좋아요. 단어 자체를 쓰는 방향(한 호흡, 쉼표, 여백)도 있고, 멈춤이 일어나는 시간·공간을 은유하는 방향(저녁 7시, 창가)도 있어요. 어느 결이 더 끌려요?",
+        "직역하면 설명적일 수 있으니 한두 단계 추상화하는 게 좋아요. 단어 자체를 쓰는 방향(한 호흡, 쉼표, 여백)도 있고 …",
     },
     [u5b]: {
       id: u5b,
@@ -209,7 +219,7 @@ function buildInitialConversations() {
       parentId: u5b,
       role: "assistant",
       content:
-        "시간은 즉각적으로 장면을 떠올리게 해서 캔들과 잘 맞아요. 다만 '7시'처럼 너무 구체적이면 확장성이 떨어지니, '하루의 끝 무렵' 정도의 감각으로 — 무렵, 기울 무렵, 어스름, 늦오후. 이 중 '무렵'이 여백 있고 한국어 정서와도 잘 맞아 보여요.",
+        "시간은 즉각적으로 장면을 떠올리게 해서 캔들과 잘 맞아요. 다만 '7시'처럼 너무 구체적이면 확장성이 떨어지니, '하 …",
     },
     [u6b]: {
       id: u6b,
@@ -222,7 +232,7 @@ function buildInitialConversations() {
       parentId: u6b,
       role: "assistant",
       content:
-        "한 단어가 짧기 때문에 오히려 강한 거고, 보조 카피로 시간성과 감각을 풀어주면 균형이 잡혀요. '무렵 — 하루가 기우는 순간을 위한 캔들' 같은 구조. 제품 라인도 시간대로 시리즈화하면 세계관이 자연스럽게 확장돼요.",
+        "한 단어가 짧기 때문에 오히려 강한 거고, 보조 카피로 시간성과 감각을 풀어주면 균형이 잡혀요. '무렵 — 하루가 기 …",
     },
     [u7b]: {
       id: u7b,
@@ -235,9 +245,8 @@ function buildInitialConversations() {
       parentId: u7b,
       role: "assistant",
       content:
-        "하루의 결을 4~5개로 나누는 게 적당해요. '늦오후의 무렵' — 일과의 끝, '창가의 무렵' — 차 마시는 시간, '문턱의 무렵' — 잠들기 직전. 이런 식으로 시간×장소가 결합된 이름이면 향도 그 결에 맞춰 디자인하기 쉬워요. 첫 출시는 2~3개 라인으로 시작해서 시즌별로 확장하는 게 안전합니다.",
+        "하루의 결을 4~5개로 나누는 게 적당해요. '늦오후의 무렵' — 일과의 끝, '창가의 무렵' — 차 마시는 시간, '문턱 …",
     },
-
     // ── Branch C — 단어 그 자체 (sub-branch from a4b) ──
     [u3c]: {
       id: u3c,
@@ -251,7 +260,7 @@ function buildInitialConversations() {
       parentId: u3c,
       role: "assistant",
       content:
-        "직역에 가까운 단어는 의미가 명확해서 진입장벽이 낮아져요. '한 호흡', '쉼표', '여백', '틈' 같은 후보 중 '여백'은 시각·청각·감각 모두 환기시켜서 캔들의 감각과 가장 맞물려요. 단어 하나로 카피·로고·제품 모두 일관되게 풀 수 있어요.",
+        "직역에 가까운 단어는 의미가 명확해서 진입장벽이 낮아져요. '한 호흡', '쉼표', '여백', '틈' 같은 후보 중 '여 …",
     },
     [u4c]: {
       id: u4c,
@@ -264,7 +273,7 @@ function buildInitialConversations() {
       parentId: u4c,
       role: "assistant",
       content:
-        "차별화하려면 단어를 그대로 쓰기보다 변형 — '여백.오브제', '여백 사이' 같은 결합으로 가거나, 영문 표기로 'YOBAEK'처럼 익숙함을 살짝 비트는 방법이 있어요. 또는 보조 카피로 결을 다르게 — '여백을 채우는 불'처럼 일반적 의미에 새로운 결을 입히는 방향도 가능해요.",
+        "차별화하려면 단어를 그대로 쓰기보다 변형 — '여백.오브제', '여백 사이' 같은 결합으로 가거나, 영문 표기로 'YO …",
     },
   };
 
@@ -280,9 +289,8 @@ function buildInitialConversations() {
   ];
 }
 
-
 // ============================================================
-//   Main App
+// Main App
 // ============================================================
 export default function App() {
   const [conversations, setConversations] = useState(() =>
@@ -297,6 +305,7 @@ export default function App() {
   const [compareMode, setCompareMode] = useState(false);
   const [compareNodes, setCompareNodes] = useState([]);
   const [hoveredNodeId, setHoveredNodeId] = useState(null);
+  const [tapTooltipNodeId, setTapTooltipNodeId] = useState(null);
   const [highlightedNodeId, setHighlightedNodeId] = useState(null);
   const [pulsedNodeId, setPulsedNodeId] = useState(null);
   const [treeIntent, setTreeIntent] = useState(true);
@@ -494,7 +503,6 @@ export default function App() {
       (m) => m.parentId === aiChild.id && m.role === "user"
     );
     if (grand.length === 0) return true;
-
     // Branch point — check if every descendant real leaf is marked holding
     const leaves = [];
     function walk(uid) {
@@ -607,7 +615,6 @@ export default function App() {
 
       const rect = root.getBoundingClientRect();
       const center = rect.top + rect.height / 2;
-
       let best = null;
       let bestDist = Infinity;
       currentPath.forEach((id) => {
@@ -634,11 +641,13 @@ export default function App() {
     if (currentPath.length > 0) {
       const last = currentPath[currentPath.length - 1];
       setHighlightedNodeId(last);
+
       // Skip auto-scroll if change came from branch switching
       if (suppressAutoScrollRef.current) {
         suppressAutoScrollRef.current = false;
         return;
       }
+
       // scroll to bottom on first render / new message
       setTimeout(() => {
         const el = messageRefs.current[last];
@@ -656,13 +665,13 @@ export default function App() {
     const text = input.trim();
     if (!text || isLoading) return;
     if (isOnHoldingLeaf) return; // safety
+
     setInput("");
 
     const isBranching = !!pendingBranchFromId;
     const parentId = isBranching
       ? pendingBranchFromId
       : activeConv.activeLeafId;
-
     setPendingBranchFromId(null);
 
     // First message of a fresh chat → fire off a title generation in the background
@@ -702,7 +711,6 @@ export default function App() {
     });
 
     setIsLoading(true);
-
     try {
       // Build context from root → parent → new user msg
       const ctx = [];
@@ -792,11 +800,9 @@ export default function App() {
     if (!m || m.role !== "assistant") return null;
     const parent = activeConv.messages[m.parentId];
     if (!parent || !parent.parentId) return null;
-
     const branchPointId = parent.parentId;
     const branches = getChildren(branchPointId);
     if (branches.length <= 1) return null;
-
     const idx = branches.findIndex((s) => s.id === parent.id);
     return { idx, total: branches.length, branchPointId };
   }
@@ -804,7 +810,6 @@ export default function App() {
   function switchBranchAt(branchPointId, direction) {
     const branches = getChildren(branchPointId);
     if (branches.length <= 1) return;
-
     const currentChildInPath = currentPath.find(
       (id) => activeConv.messages[id]?.parentId === branchPointId
     );
@@ -813,7 +818,6 @@ export default function App() {
     let newIdx = idx + direction;
     if (newIdx < 0) newIdx = branches.length - 1;
     if (newIdx >= branches.length) newIdx = 0;
-
     // Follow first child to leaf
     let leaf = branches[newIdx].id;
     while (true) {
@@ -864,20 +868,24 @@ export default function App() {
     );
   }
 
-  // ── Click tree node ──
+  // ── Tap/click tooltip — show label for 1.2s, hover keeps it visible ──
+  // (hoveredNodeId is for hover; tapTooltipNodeId is for tap/click/long-press.
+  //  TreePanel renders the tooltip if either matches.)
   const tapTooltipTimerRef = useRef(null);
+  function showLabelBriefly(nodeId) {
+    setTapTooltipNodeId(nodeId);
+    if (tapTooltipTimerRef.current) clearTimeout(tapTooltipTimerRef.current);
+    tapTooltipTimerRef.current = setTimeout(() => {
+      setTapTooltipNodeId(null);
+      tapTooltipTimerRef.current = null;
+    }, 1200);
+  }
 
+  // ── Click tree node ──
   function handleTreeNodeClick(nodeId) {
-    // On touch devices, briefly show the label tooltip
-    if (isTouchDevice) {
-      setHoveredNodeId(nodeId);
-      if (tapTooltipTimerRef.current)
-        clearTimeout(tapTooltipTimerRef.current);
-      tapTooltipTimerRef.current = setTimeout(() => {
-        setHoveredNodeId(null);
-        tapTooltipTimerRef.current = null;
-      }, 2000);
-    }
+    // Briefly show the label tooltip on tap/click (1.2s).
+    // Hover state is independent, so if the cursor is on the node the tooltip stays.
+    showLabelBriefly(nodeId);
 
     if (compareMode) {
       setCompareNodes((prev) => {
@@ -913,6 +921,7 @@ export default function App() {
     updateActiveConv(() => ({ activeLeafId: leaf }));
     lastProgScrollAt.current = Date.now();
     setHighlightedNodeId(nodeId);
+
     setTimeout(() => {
       const el = messageRefs.current[nodeId];
       if (el) {
@@ -983,6 +992,7 @@ export default function App() {
         ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
         * { scrollbar-width: thin; scrollbar-color: #27272a transparent; }
       `}</style>
+
       {sidebarVisible && !isNarrow && (
         <SidebarPanel
           conversations={conversations}
@@ -1002,17 +1012,17 @@ export default function App() {
         }`}
       >
         {/* Top bar */}
-        <div className="h-14 flex items-center px-4 sm:px-6 border-b border-zinc-800/30 shrink-0 gap-1">
+        <div className="h-14 flex items-center px-4 sm:px-6 border-b border-zinc-800/30 shrink-0 gap-2">
           {!sidebarVisible && (
             <button
               onClick={() => setSidebarIntent(true)}
-              className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400"
+              className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
               title="메뉴 열기"
             >
               <PanelLeft className="w-4 h-4" />
             </button>
           )}
-          <button className="flex items-center gap-1.5 text-base text-zinc-200 hover:text-zinc-100 px-2 py-1 rounded-md hover:bg-zinc-800/40">
+          <button className="flex items-center gap-1.5 text-base text-zinc-200 hover:text-zinc-100">
             <span>{activeConv.title}</span>
             <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
           </button>
@@ -1020,14 +1030,14 @@ export default function App() {
           {!treeVisible && (
             <>
               <button
-                className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-500"
+                className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
                 title="대화 공유"
               >
                 <Share2 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setTreeIntent(true)}
-                className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-600"
+                className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
                 title="노드 트리 보기"
               >
                 <Split className="w-4 h-4 rotate-180" />
@@ -1065,6 +1075,7 @@ export default function App() {
                 const branchPointIdx = pendingBranchFromId
                   ? currentPath.indexOf(pendingBranchFromId)
                   : -1;
+
                 // For holding path: find most recent divergence (AI w/ multiple user children)
                 let divergenceAtIdx = -1;
                 if (isOnHoldingLeaf) {
@@ -1087,10 +1098,12 @@ export default function App() {
                   divergenceAtIdx >= 0 &&
                   idx > divergenceAtIdx;
                 const dimmed = dimmedByBranching || dimmedByHolding;
+
                 const isHighlighted = id === highlightedNodeId;
                 const isPulsed = id === pulsedNodeId;
                 const isConvergedGlow =
                   m.role === "user" && id === convergedLeafId;
+
                 const prevMsg =
                   idx > 0 ? activeConv.messages[currentPath[idx - 1]] : null;
                 const extraTop =
@@ -1105,7 +1118,7 @@ export default function App() {
                     const branchIdx = branches.findIndex((b) => b.id === id);
                     navEl = (
                       <div className="flex justify-center -my-2">
-                        <div className="flex items-center gap-0.5 px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 text-xs">
+                        <div className="flex items-center gap-0.5 px-2 py-1 rounded-lg bg-amber-500/10 text-amber-300/90 text-xs">
                           <button
                             onClick={() => switchBranchAt(m.parentId, -1)}
                             className="hover:text-amber-100 p-1 rounded"
@@ -1153,45 +1166,45 @@ export default function App() {
 
         {/* Composer (hidden in compare mode) */}
         {!compareMode && (
-        <div
-          className="px-6 lg:px-12 pb-6 pt-5 shrink-0"
-          onWheel={(e) => {
-            if (chatScrollRef.current) {
-              chatScrollRef.current.scrollTop += e.deltaY;
-            }
-          }}
-        >
-          <div className="max-w-3xl mx-auto">
-            {pendingBranchFromId && (
-              <div className="flex items-center gap-2 mb-2 text-xs px-3 py-2 bg-amber-500/10 text-amber-200 rounded-lg border border-amber-500/30">
-                <Split className="w-3.5 h-3.5 rotate-180" />
-                <span>
-                  이 메시지에서 새 갈래로 이어집니다. 메시지를 입력해
-                  분기를 시작하세요.
-                </span>
-                <button
-                  onClick={cancelBranch}
-                  className="ml-auto hover:text-amber-100 px-1.5 py-0.5 rounded hover:bg-amber-500/15"
-                >
-                  취소
-                </button>
-              </div>
-            )}
-            {isOnHoldingLeaf ? (
-              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl px-4 py-4 text-sm text-zinc-500 text-center">
-                보류된 갈래입니다.
-              </div>
-            ) : (
-              <Composer
-                ref={inputRef}
-                value={input}
-                onChange={setInput}
-                onSend={handleSend}
-                disabled={isLoading}
-              />
-            )}
+          <div
+            className="px-6 lg:px-12 pb-6 pt-5 shrink-0"
+            onWheel={(e) => {
+              if (chatScrollRef.current) {
+                chatScrollRef.current.scrollTop += e.deltaY;
+              }
+            }}
+          >
+            <div className="max-w-3xl mx-auto">
+              {pendingBranchFromId && (
+                <div className="flex items-center gap-2 mb-2 text-xs px-3 py-2 bg-amber-500/10 text-amber-200 rounded-lg">
+                  <Split className="w-3.5 h-3.5 rotate-180" />
+                  <span>
+                    이 메시지에서 새 갈래로 이어집니다. 메시지를 입력해
+                    분기를 시작하세요.
+                  </span>
+                  <button
+                    onClick={cancelBranch}
+                    className="ml-auto hover:text-amber-100 px-1.5 py-0.5 rounded hover:bg-amber-500/20"
+                  >
+                    취소
+                  </button>
+                </div>
+              )}
+              {isOnHoldingLeaf ? (
+                <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl px-4 py-4 text-sm text-zinc-500 text-center">
+                  보류된 갈래입니다.
+                </div>
+              ) : (
+                <Composer
+                  ref={inputRef}
+                  value={input}
+                  onChange={setInput}
+                  onSend={handleSend}
+                  disabled={isLoading}
+                />
+              )}
+            </div>
           </div>
-        </div>
         )}
       </div>
 
@@ -1206,6 +1219,7 @@ export default function App() {
           compareMode={compareMode}
           compareNodes={compareNodes}
           hoveredNodeId={hoveredNodeId}
+          tapTooltipNodeId={tapTooltipNodeId}
           onHoverNode={setHoveredNodeId}
           onClickNode={handleTreeNodeClick}
           onDoubleClickNode={pulseNode}
@@ -1216,9 +1230,10 @@ export default function App() {
           holdingSet={holdingSet}
           convergedPathSet={convergedPathSet}
           isLeafFn={isLeafUserMsg}
-          onContextMenu={(nodeId, x, y) =>
-            setContextMenu({ nodeId, x, y })
-          }
+          onContextMenu={(nodeId, x, y) => {
+            setContextMenu({ nodeId, x, y });
+            showLabelBriefly(nodeId);
+          }}
           hintVisible={treeHintVisible}
           onCloseHint={() => setTreeHintVisible(false)}
           isTouchDevice={isTouchDevice}
@@ -1257,6 +1272,7 @@ export default function App() {
             compareMode={compareMode}
             compareNodes={compareNodes}
             hoveredNodeId={hoveredNodeId}
+            tapTooltipNodeId={tapTooltipNodeId}
             onHoverNode={setHoveredNodeId}
             onClickNode={handleTreeNodeClick}
             onDoubleClickNode={pulseNode}
@@ -1267,12 +1283,13 @@ export default function App() {
             holdingSet={holdingSet}
             convergedPathSet={convergedPathSet}
             isLeafFn={isLeafUserMsg}
-            onContextMenu={(nodeId, x, y) =>
-              setContextMenu({ nodeId, x, y })
-            }
+            onContextMenu={(nodeId, x, y) => {
+              setContextMenu({ nodeId, x, y });
+              showLabelBriefly(nodeId);
+            }}
             hintVisible={treeHintVisible}
             onCloseHint={() => setTreeHintVisible(false)}
-          isTouchDevice={isTouchDevice}
+            isTouchDevice={isTouchDevice}
           />
         </div>
       )}
@@ -1294,7 +1311,7 @@ export default function App() {
 }
 
 // ============================================================
-//   Sidebar
+// Sidebar
 // ============================================================
 function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onCollapse }) {
   const recentItems = useMemo(() => {
@@ -1319,22 +1336,22 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
       <div className="px-3 pt-4 flex items-center gap-1">
         <button
           onClick={onCollapse}
-          className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-500"
+          className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
           title="메뉴 닫기"
         >
           <PanelLeft className="w-4 h-4" />
         </button>
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-500">
+        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200">
           <Search className="w-4 h-4" />
         </button>
-        <button className="flex-1 h-9 rounded-lg bg-zinc-800/70 flex items-center justify-center gap-1.5 text-sm text-zinc-100 font-medium">
+        <button className="flex-1 h-9 rounded-lg bg-zinc-800/70 flex items-center justify-center gap-1.5 text-sm text-zinc-200">
           <MessageSquare className="w-4 h-4" />
           Chat
         </button>
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-500">
+        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200">
           <ListChecks className="w-4 h-4" />
         </button>
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-500">
+        <button className="w-9 h-9 rounded-lg hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200">
           <Code2 className="w-4 h-4" />
         </button>
       </div>
@@ -1343,7 +1360,7 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
       <div className="px-3 mt-4 space-y-0.5 text-sm">
         <button
           onClick={onNewChat}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-zinc-800/50"
+          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-zinc-800/40"
         >
           <Plus className="w-4 h-4 text-zinc-400" />
           <span>New chat</span>
@@ -1378,7 +1395,7 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
 
       {/* Footer */}
       <div className="px-3 py-3 border-t border-zinc-800/40 flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-full bg-orange-700/90 flex items-center justify-center text-xs font-medium">
+        <div className="w-7 h-7 rounded-full bg-orange-700/90 flex items-center justify-center text-xs text-white font-medium">
           P
         </div>
         <div className="text-xs text-zinc-300 flex-1 truncate">
@@ -1392,7 +1409,7 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
 
 function SidebarItem({ icon, label }) {
   return (
-    <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-zinc-800/50">
+    <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-zinc-800/40">
       <span className="text-zinc-400">{icon}</span>
       <span>{label}</span>
     </button>
@@ -1400,7 +1417,7 @@ function SidebarItem({ icon, label }) {
 }
 
 // ============================================================
-//   Message block
+// Message block
 // ============================================================
 function MessageBlock({
   message,
@@ -1430,6 +1447,7 @@ function MessageBlock({
     } else {
       transition = "box-shadow 1000ms ease-out";
     }
+
     return (
       <div
         ref={refCallback}
@@ -1440,7 +1458,7 @@ function MessageBlock({
         style={extraTop ? { marginTop: "60px" } : undefined}
       >
         <div
-          className="px-4 py-3 rounded-2xl bg-zinc-800/80 text-zinc-100 whitespace-pre-wrap break-words text-base leading-relaxed"
+          className="px-4 py-3 rounded-2xl bg-zinc-800/80 text-zinc-100 whitespace-pre-wrap break-words text-[15px] leading-relaxed"
           style={{ maxWidth: "80%", boxShadow, transition }}
         >
           {message.content}
@@ -1462,7 +1480,6 @@ function MessageBlock({
       <div className="text-zinc-200 whitespace-pre-wrap break-words text-base leading-relaxed">
         {message.content}
       </div>
-
       <div className="flex items-center gap-0.5 mt-3">
         <ActionButton
           title={copied ? "복사됨" : "복사"}
@@ -1555,7 +1572,7 @@ function ActionButton({ children, title, onClick, highlighted }) {
       </button>
       {hovered && tooltipPos && (
         <div
-          className="fixed -translate-x-1/2 px-2 py-1 rounded-md bg-zinc-800 text-zinc-100 text-xs whitespace-nowrap border border-zinc-700/50 shadow-lg pointer-events-none z-50"
+          className="fixed -translate-x-1/2 px-2 py-1 rounded-md bg-zinc-800 text-zinc-100 text-xs whitespace-nowrap pointer-events-none z-50"
           style={{ left: tooltipPos.left, top: tooltipPos.top }}
         >
           {title}
@@ -1575,7 +1592,7 @@ function LoadingIndicator() {
 }
 
 // ============================================================
-//   Composer
+// Composer
 // ============================================================
 const Composer = forwardRef(function Composer(
   { value, onChange, onSend, disabled },
@@ -1599,7 +1616,7 @@ const Composer = forwardRef(function Composer(
   };
 
   return (
-    <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-2xl px-4 pt-3 pb-2.5 backdrop-blur shadow-sm focus-within:border-zinc-600/70">
+    <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-2xl px-4 pt-3 pb-2.5 backdrop-blur-sm">
       <textarea
         ref={setRef}
         value={value}
@@ -1613,7 +1630,7 @@ const Composer = forwardRef(function Composer(
         placeholder="메시지를 입력하세요..."
         rows={1}
         disabled={disabled}
-        className="w-full ml-2 mt-0.5 bg-transparent resize-none outline-none text-zinc-100 placeholder-zinc-500 text-base leading-relaxed disabled:opacity-50 overflow-hidden"
+        className="w-full ml-2 mt-0.5 bg-transparent resize-none outline-none text-zinc-100 placeholder:text-zinc-500 text-[15px] leading-relaxed max-h-48"
         style={{ minHeight: "24px" }}
       />
       <div className="flex items-center justify-between mt-1.5">
@@ -1621,14 +1638,14 @@ const Composer = forwardRef(function Composer(
           <Plus className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-1.5">
-          <button className="flex items-center gap-1 text-xs text-zinc-400 px-2 py-1 rounded-md hover:bg-zinc-800/40 hover:text-zinc-200">
+          <button className="flex items-center gap-1 text-xs text-zinc-400 px-2 py-1 rounded-md hover:bg-zinc-800/60 hover:text-zinc-200">
             <span>Phi 1.0</span>
             <ChevronDown className="w-3 h-3" />
           </button>
           <button
             onClick={onSend}
             disabled={disabled || !value.trim()}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
             title="보내기 (Enter)"
           >
             <Mic className="w-4 h-4" />
@@ -1640,7 +1657,7 @@ const Composer = forwardRef(function Composer(
 });
 
 // ============================================================
-//   Tree Panel
+// Tree Panel
 // ============================================================
 function TreePanel({
   messages,
@@ -1651,6 +1668,7 @@ function TreePanel({
   compareMode,
   compareNodes,
   hoveredNodeId,
+  tapTooltipNodeId,
   onHoverNode,
   onClickNode,
   onDoubleClickNode,
@@ -1670,6 +1688,7 @@ function TreePanel({
   const allNodes = Object.values(messages).filter(
     (m) => m.role === "user" && layout[m.id]
   );
+
   if (allNodes.length === 0) {
     return (
       <div
@@ -1682,7 +1701,7 @@ function TreePanel({
           compareCount={compareNodes.length}
           onHide={onHide}
         />
-        <div className="flex-1 flex items-center justify-center pb-32 text-xs text-zinc-600 px-6 text-center border-l border-zinc-800/40">
+        <div className="flex-1 flex items-center justify-center pb-32 text-xs text-zinc-600 px-4 text-center">
           대화를 시작하면 여기에 갈래가 그려져요.
         </div>
       </div>
@@ -1692,12 +1711,10 @@ function TreePanel({
   const cols = Math.max(0, ...Object.values(layout).map((p) => p.col)) + 1;
   const rows =
     Math.max(0, ...Object.values(layout).map((p) => p.depth)) + 1;
-
   const COL_W = 48;
   const ROW_H = 48;
   const PAD_X = 36;
   const PAD_Y = 34;
-
   const width = Math.max(180, PAD_X * 2 + (cols - 1) * COL_W);
   const height = Math.max(120, PAD_Y * 2 + (rows - 1) * ROW_H);
 
@@ -1721,6 +1738,10 @@ function TreePanel({
     }
   }
 
+  // Effective tooltip target: hover wins (so a still-hovered node keeps showing).
+  // Tap-tooltip is a secondary source so click/long-press also surfaces the label.
+  const tooltipNodeId = hoveredNodeId || tapTooltipNodeId;
+
   return (
     <div
       className="shrink-0 bg-zinc-950 flex flex-col h-full"
@@ -1732,7 +1753,6 @@ function TreePanel({
         compareCount={compareNodes.length}
         onHide={onHide}
       />
-
       <div className="flex-1 overflow-auto p-3 relative border-l border-zinc-800/40 select-none">
         <svg
           width={width}
@@ -1803,7 +1823,6 @@ function TreePanel({
               : inActivePath
               ? "#a1a1aa"
               : "#3f3f46";
-
             // Path: vertical if same col, S-curve otherwise
             const d =
               p.x === c.x
@@ -1833,6 +1852,7 @@ function TreePanel({
             const isCompareSel = compareNodes.includes(m.id);
             const dimmed = pendingDimSet.has(m.id);
             const isBranchSrc = pendingBranchFromId === m.id;
+
             const state = nodeStates[m.id];
             const isHolding = state === "holding";
             const isConverged = state === "converged";
@@ -1848,7 +1868,6 @@ function TreePanel({
             else if (isHighlight) fill = "#fafafa";
             else if (inPath) fill = "#d4d4d8";
             else fill = "#52525b";
-
             if (dimmed) fill = "#3f3f46";
             // Holding branch points are darker than dim
             if (inHoldingBranch && !isHolding) fill = "#27272a";
@@ -1961,11 +1980,11 @@ function TreePanel({
           })}
         </svg>
 
-        {/* Hover tooltip */}
-        {hoveredNodeId &&
+        {/* Label tooltip — visible while hovering OR briefly after tap/click/long-press */}
+        {tooltipNodeId &&
           (() => {
-            const m = messages[hoveredNodeId];
-            const p = pos(hoveredNodeId);
+            const m = messages[tooltipNodeId];
+            const p = pos(tooltipNodeId);
             if (!m || !p) return null;
             const label =
               m.branchLabel ||
@@ -1976,7 +1995,7 @@ function TreePanel({
             // the container's padding (12) + svg position
             return (
               <div
-                className="absolute pointer-events-none px-2 py-1 bg-zinc-800 text-zinc-100 text-xs rounded-md shadow-lg whitespace-nowrap border border-zinc-700/50 z-10"
+                className="absolute pointer-events-none px-2 py-1 bg-zinc-800 text-zinc-100 text-xs rounded-md whitespace-nowrap z-30 shadow-lg"
                 style={{
                   left: `${12 + p.x + 14}px`,
                   top: `${12 + p.y - 10}px`,
@@ -1987,9 +2006,10 @@ function TreePanel({
             );
           })()}
       </div>
+
       <div className="overflow-hidden shrink-0">
         <div
-          className={`mx-3 mb-6 mt-1 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60 transition-all duration-200 ${
+          className={`mx-3 mb-6 mt-1 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60 transition-all duration-300 ${
             hintVisible
               ? "translate-y-0 opacity-100"
               : "translate-y-full opacity-0 pointer-events-none"
@@ -2021,14 +2041,14 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
       <div className="h-14 flex items-center px-4 border-b border-zinc-800/30 gap-2 shrink-0">
         <div className="flex-1" />
         <button
-          className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-500"
+          className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
           title="대화 공유"
         >
           <Share2 className="w-4 h-4" />
         </button>
         <button
           onClick={onHide}
-          className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-100"
+          className="w-7 h-7 rounded-md hover:bg-zinc-800/40 flex items-center justify-center text-zinc-400 hover:text-zinc-200"
           title="노드 트리 숨기기"
         >
           <Split className="w-4 h-4 rotate-180" />
@@ -2037,7 +2057,7 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
       <div className="px-3 pt-3 pb-2 shrink-0 border-l border-zinc-800/40">
         <button
           onClick={onToggleCompare}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition ${
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition ${
             compareMode
               ? "bg-zinc-800/80 border-zinc-700 text-zinc-100"
               : "bg-zinc-900/40 border-zinc-800/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
@@ -2057,10 +2077,11 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
 }
 
 // ============================================================
-//   Node Context Menu (right-click on a leaf in the tree)
+// Node Context Menu (right-click on a leaf in the tree)
 // ============================================================
 function NodeContextMenu({ x, y, currentState, onSet, onClose }) {
   const [hovered, setHovered] = useState(null);
+
   // Close on outside click / Escape
   useEffect(() => {
     function onDown(e) {
@@ -2085,7 +2106,7 @@ function NodeContextMenu({ x, y, currentState, onSet, onClose }) {
   return (
     <div
       data-context-menu
-      className="fixed z-50 flex flex-col gap-1 p-1.5 rounded-lg bg-zinc-900 border border-zinc-700/60 shadow-xl"
+      className="fixed z-50 flex flex-col gap-1 p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 shadow-xl"
       style={{ left: x, top: y }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -2109,7 +2130,7 @@ function NodeContextMenu({ x, y, currentState, onSet, onClose }) {
             </button>
             {hovered === key && (
               <div
-                className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-md bg-zinc-800 text-zinc-100 text-xs whitespace-nowrap border border-zinc-700/50 shadow-lg pointer-events-none ${
+                className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-md bg-zinc-800 text-zinc-100 text-xs whitespace-nowrap pointer-events-none ${
                   placement === "top"
                     ? "bottom-full mb-1.5"
                     : "top-full mt-1.5"
@@ -2141,16 +2162,18 @@ function Toggle({ on }) {
 }
 
 // ============================================================
-//   Compare View
+// Compare View
 // ============================================================
 function CompareView({ nodes, messages, getPathTo, windowWidth }) {
   const isWide = (windowWidth ?? 1200) >= 1200;
   const scrollRefs = useRef([]);
+
   useEffect(() => {
     scrollRefs.current.forEach((el) => {
       if (el) el.scrollTop = el.scrollHeight;
     });
   }, [nodes]);
+
   return (
     <div className="flex-1 flex flex-col min-h-0 px-4 lg:px-6 py-6 overflow-hidden">
       <div
@@ -2184,9 +2207,9 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
           return (
             <div
               key={nodeId}
-              className="bg-zinc-900/30 rounded-xl border border-zinc-800/50 flex flex-col min-h-0 min-w-0 overflow-hidden flex-1"
+              className="bg-zinc-900/30 rounded-xl border border-zinc-800/50 flex flex-col min-h-0 flex-1"
             >
-              <div className="text-xs text-amber-400 px-4 pt-4 pb-3 font-medium uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+              <div className="text-xs text-amber-400 px-4 pt-4 pb-3 font-medium uppercase tracking-wider flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                 {lbl || `갈래 ${i + 1}`}
               </div>
@@ -2201,7 +2224,7 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
                     return (
                       <div key={id} className="flex justify-end">
                         <div
-                          className="px-3 py-2 rounded-xl bg-zinc-800 text-zinc-100 text-sm whitespace-pre-wrap leading-relaxed"
+                          className="px-3 py-2 rounded-xl bg-zinc-800 text-zinc-100 text-sm whitespace-pre-wrap break-words"
                           style={{ maxWidth: "90%" }}
                         >
                           {m.content}
