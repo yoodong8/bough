@@ -905,11 +905,9 @@ export default function App() {
 
     setIsLoading(true);
     try {
-      const summaryText = await callLLM(ctx, {
-        system:
-          "이 갈래의 흐름을 핵심만 정리해주세요. 사용자가 시작한 주제, 거쳐온 핵심 결정, 수렴한 결론을 중심으로 3-5개의 짧은 포인트로 압축. 단정한 문장체로. 너무 길어지지 않게.",
-        maxTokens: 700,
-      });
+      // TODO: API 연동 후 아래 더미 텍스트를 callLLM 호출로 교체
+      const summaryText =
+        "캔들 오브제 브랜드의 컨셉 방향을 논의한 결과, '어른의 생일'이 지닌 양가감정—축하받아야 한다는 압박과 관계 피로감—을 출발점으로 삼아, 외부 시선에서 벗어나 자신만의 시간을 만드는 '작은 멈춤'으로 수렴했습니다. 브랜드 네임은 시간·장소를 은유하는 방향으로 '무렵'을 선택하였으며, 늦오후·창가·문턱 등 하루의 결을 시리즈로 확장하는 구조를 기본 라인업으로 정했습니다.";
 
       const summaryId = nid();
       const summaryMsg = {
