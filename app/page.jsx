@@ -716,9 +716,14 @@ export default function App() {
     setInput("");
 
     const isBranching = !!pendingBranchFromId;
-    const parentId = isBranching
+    let parentId = isBranching
       ? pendingBranchFromId
       : activeConv.activeLeafId;
+    // If we're continuing from (or branching off) a summary, skip past it so the
+    // tree stays a clean user→AI alternation. Summaries hang off as side cars.
+    while (parentId && activeConv.messages[parentId]?.isSummary) {
+      parentId = activeConv.messages[parentId].parentId;
+    }
     setPendingBranchFromId(null);
 
     const isFirstMessageOfNewChat =
@@ -870,18 +875,29 @@ export default function App() {
     if (isLoading || !convergedLeafId) return;
     dismissSummaryTip();
 
-    const parentId = activeConv.activeLeafId;
+    let parentId = activeConv.activeLeafId;
+    // Don't stack summaries on top of summaries — attach to the underlying chain.
+    while (parentId && activeConv.messages[parentId]?.isSummary) {
+      parentId = activeConv.messages[parentId].parentId;
+    }
     if (!parentId) return;
 
-    // Build context from root → current leaf
+    // Build context: root → convergedLeafId (+ the AI completion right after it).
+    // Anything beyond the converged point is excluded so the summary stays focused
+    // on the converged flow itself.
     const ctx = [];
-    let cursor = parentId;
-    const ancestors = [];
+    const chain = [];
+    let cursor = convergedLeafId;
     while (cursor) {
-      ancestors.unshift(cursor);
+      chain.unshift(cursor);
       cursor = activeConv.messages[cursor]?.parentId;
     }
-    ancestors.forEach((aid) => {
+    const aiChildOfConverged = Object.values(activeConv.messages).find(
+      (m) => m.parentId === convergedLeafId && m.role === "assistant"
+    );
+    if (aiChildOfConverged) chain.push(aiChildOfConverged.id);
+
+    chain.forEach((aid) => {
       const m = activeConv.messages[aid];
       if (m) ctx.push(m);
     });
@@ -890,7 +906,7 @@ export default function App() {
     try {
       const summaryText = await callLLM(ctx, {
         system:
-          "지금까지의 대화 흐름을 정리해주세요. 사용자가 시작한 주제, 거쳐온 핵심 결정, 도달한 결론을 중심으로 3-5개의 짧은 포인트로 압축. 단정한 문장체로. 너무 길어지지 않게.",
+          "이 갈래의 흐름을 핵심만 정리해주세요. 사용자가 시작한 주제, 거쳐온 핵심 결정, 수렴한 결론을 중심으로 3-5개의 짧은 포인트로 압축. 단정한 문장체로. 너무 길어지지 않게.",
         maxTokens: 700,
       });
 
@@ -1287,6 +1303,41 @@ export default function App() {
                   }
                 }
 
+                // Summary sidecar — if this AI message has an isSummary child
+                // that isn't currently in the active path, render it inline right
+                // after so the user keeps seeing the summary even after they
+                // continue the conversation past it.
+                let sidecarEl = null;
+                if (m.role === "assistant") {
+                  const summaryChild = Object.values(activeConv.messages).find(
+                    (child) =>
+                      child.parentId === id &&
+                      child.role === "assistant" &&
+                      child.isSummary
+                  );
+                  if (
+                    summaryChild &&
+                    !currentPathSet.has(summaryChild.id)
+                  ) {
+                    sidecarEl = (
+                      <MessageBlock
+                        key={`sidecar-${summaryChild.id}`}
+                        message={summaryChild}
+                        dimmed={dimmed}
+                        isHighlighted={false}
+                        isPulsed={false}
+                        isConvergedGlow={false}
+                        extraTop={false}
+                        refCallback={() => {}}
+                        onBranch={() => startBranch(summaryChild.id)}
+                        isPendingBranchSource={
+                          pendingBranchFromId === summaryChild.id
+                        }
+                      />
+                    );
+                  }
+                }
+
                 return (
                   <Fragment key={id}>
                     {navEl}
@@ -1301,6 +1352,7 @@ export default function App() {
                       onBranch={() => startBranch(id)}
                       isPendingBranchSource={pendingBranchFromId === id}
                     />
+                    {sidecarEl}
                   </Fragment>
                 );
               })}
@@ -1678,15 +1730,21 @@ function MessageBlock({
         dimmed ? "opacity-30" : ""
       }`}
     >
-      {message.isSummary && (
-        <div className="flex items-center gap-2.5 mb-3 text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
-          <span>Summary</span>
-          <span className="flex-1 h-px bg-neutral-200" />
+      {message.isSummary ? (
+        <div className="bg-white border border-neutral-200 rounded-xl px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-2.5 mb-3 text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
+            <span>Summary</span>
+            <span className="flex-1 h-px bg-neutral-200" />
+          </div>
+          <div className="text-neutral-800 whitespace-pre-wrap break-words text-[15px] leading-[1.75]">
+            {message.content}
+          </div>
+        </div>
+      ) : (
+        <div className="text-neutral-800 whitespace-pre-wrap break-words text-[15px] leading-[1.75]">
+          {message.content}
         </div>
       )}
-      <div className="text-neutral-800 whitespace-pre-wrap break-words text-[15px] leading-[1.75]">
-        {message.content}
-      </div>
       <div className="flex items-center gap-0.5 mt-3">
         <ActionButton
           title={copied ? "복사됨" : "복사"}
