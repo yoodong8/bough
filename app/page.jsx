@@ -19,6 +19,7 @@ import {
   FolderOpen,
   Sparkles,
   Mic,
+  ArrowUp,
   ArrowUpRight,
   Share2,
   Loader2,
@@ -949,14 +950,14 @@ export default function App() {
     const parent = activeConv.messages[m.parentId];
     if (!parent || !parent.parentId) return null;
     const branchPointId = parent.parentId;
-    const branches = getChildren(branchPointId);
+    const branches = getChildren(branchPointId).filter((b) => !b.isSummary);
     if (branches.length <= 1) return null;
     const idx = branches.findIndex((s) => s.id === parent.id);
     return { idx, total: branches.length, branchPointId };
   }
 
   function switchBranchAt(branchPointId, direction) {
-    const branches = getChildren(branchPointId);
+    const branches = getChildren(branchPointId).filter((b) => !b.isSummary);
     if (branches.length <= 1) return;
     const currentChildInPath = currentPath.find(
       (id) => activeConv.messages[id]?.parentId === branchPointId
@@ -968,7 +969,7 @@ export default function App() {
     if (newIdx >= branches.length) newIdx = 0;
     let leaf = branches[newIdx].id;
     while (true) {
-      const ch = getChildren(leaf);
+      const ch = getChildren(leaf).filter((c) => !c.isSummary);
       if (ch.length === 0) break;
       leaf = ch[0].id;
     }
@@ -1043,7 +1044,7 @@ export default function App() {
 
     let leaf = nodeId;
     while (true) {
-      const ch = getChildren(leaf);
+      const ch = getChildren(leaf).filter((c) => !c.isSummary);
       if (ch.length === 0) break;
       let next = ch[0];
       for (const c of ch) {
@@ -1272,7 +1273,9 @@ export default function App() {
 
                 let navEl = null;
                 if (m.role === "user" && m.parentId) {
-                  const branches = getChildren(m.parentId);
+                  const branches = getChildren(m.parentId).filter(
+                    (b) => !b.isSummary
+                  );
                   if (branches.length > 1) {
                     const branchIdx = branches.findIndex((b) => b.id === id);
                     navEl = (
@@ -1421,6 +1424,7 @@ export default function App() {
                   onChange={setInput}
                   onSend={handleSend}
                   disabled={isLoading}
+                  isTouchDevice={isTouchDevice}
                 />
               )}
             </div>
@@ -1860,7 +1864,7 @@ function LoadingIndicator() {
 // Composer
 // ============================================================
 const Composer = forwardRef(function Composer(
-  { value, onChange, onSend, disabled },
+  { value, onChange, onSend, disabled, isTouchDevice },
   ref
 ) {
   const localRef = useRef(null);
@@ -1886,7 +1890,9 @@ const Composer = forwardRef(function Composer(
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          // Touch devices: Enter inserts a newline (default browser behavior).
+          // Desktop: Enter sends; Shift+Enter inserts a newline.
+          if (e.key === "Enter" && !e.shiftKey && !isTouchDevice) {
             e.preventDefault();
             onSend();
           }
@@ -1907,13 +1913,23 @@ const Composer = forwardRef(function Composer(
             <ChevronDown className="w-3 h-3" />
           </button>
           <button
-            onClick={onSend}
-            disabled={disabled || !value.trim()}
+            onClick={isTouchDevice ? undefined : onSend}
+            disabled={isTouchDevice ? false : disabled || !value.trim()}
             className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-500 hover:bg-stone-100 hover:text-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition"
-            title="보내기 (Enter)"
+            title={isTouchDevice ? "음성 입력" : "보내기 (Enter)"}
           >
             <Mic className="w-4 h-4" />
           </button>
+          {isTouchDevice && (
+            <button
+              onClick={onSend}
+              disabled={disabled || !value.trim()}
+              className="w-8 h-8 rounded-md flex items-center justify-center bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-stone-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition"
+              title="보내기"
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
