@@ -382,6 +382,9 @@ export default function App() {
   const [contextMenu, setContextMenu] = useState(null); // {nodeId, x, y}
   const [treeHintVisible, setTreeHintVisible] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [dismissedSummary, setDismissedSummary] = useState(null);
+  // dismissedSummary = { userMessageCount, nodeStatesRef } | null
+  // — invalidated when either the user adds a new message OR nodeStates mutate
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.matchMedia) {
@@ -683,22 +686,26 @@ export default function App() {
     if (currentPath.length > 0) {
       const last = currentPath[currentPath.length - 1];
       setHighlightedNodeId(last);
-
-      if (suppressAutoScrollRef.current) {
-        suppressAutoScrollRef.current = false;
-        return;
-      }
-
-      setTimeout(() => {
-        const el = messageRefs.current[last];
-        if (el && chatScrollRef.current) {
-          lastProgScrollAt.current = Date.now();
-          el.scrollIntoView({ behavior: "smooth", block: "end" });
-        }
-      }, 30);
     }
+
+    if (suppressAutoScrollRef.current) {
+      suppressAutoScrollRef.current = false;
+      return;
+    }
+
+    const t = setTimeout(() => {
+      const scrollEl = chatScrollRef.current;
+      if (scrollEl) {
+        lastProgScrollAt.current = Date.now();
+        scrollEl.scrollTo({
+          top: scrollEl.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }, 30);
+    return () => clearTimeout(t);
     // eslint-disable-next-line
-  }, [activeConv.activeLeafId]);
+  }, [activeConv.activeLeafId, isLoading]);
 
   // ── Send message ──
   async function handleSend() {
@@ -825,6 +832,99 @@ export default function App() {
 
   function cancelBranch() {
     setPendingBranchFromId(null);
+  }
+
+  // Show the "정리해 드릴까요?" tip when the user is viewing a branch that
+  // contains a converged node. Dismissal is snapshot-based so it auto-invalidates
+  // when the user adds a new chat OR when converged state mutates (incl. re-toggle).
+  const isOnConvergedBranch =
+    !!convergedLeafId && currentPath.includes(convergedLeafId);
+
+  const userMessageCount = useMemo(
+    () =>
+      Object.values(activeConv.messages).filter((m) => m.role === "user")
+        .length,
+    [activeConv.messages]
+  );
+
+  const isSummaryTipDismissed =
+    !!dismissedSummary &&
+    dismissedSummary.userMessageCount === userMessageCount &&
+    dismissedSummary.nodeStatesRef === activeConv.nodeStates;
+
+  const showSummaryTip =
+    isOnConvergedBranch &&
+    !isSummaryTipDismissed &&
+    !pendingBranchFromId &&
+    !isOnHoldingLeaf;
+
+  function dismissSummaryTip() {
+    if (!convergedLeafId) return;
+    setDismissedSummary({
+      userMessageCount,
+      nodeStatesRef: activeConv.nodeStates,
+    });
+  }
+
+  async function handleSummarize() {
+    if (isLoading || !convergedLeafId) return;
+    dismissSummaryTip();
+
+    const parentId = activeConv.activeLeafId;
+    if (!parentId) return;
+
+    // Build context from root → current leaf
+    const ctx = [];
+    let cursor = parentId;
+    const ancestors = [];
+    while (cursor) {
+      ancestors.unshift(cursor);
+      cursor = activeConv.messages[cursor]?.parentId;
+    }
+    ancestors.forEach((aid) => {
+      const m = activeConv.messages[aid];
+      if (m) ctx.push(m);
+    });
+
+    setIsLoading(true);
+    try {
+      const summaryText = await callLLM(ctx, {
+        system:
+          "지금까지의 대화 흐름을 정리해주세요. 사용자가 시작한 주제, 거쳐온 핵심 결정, 도달한 결론을 중심으로 3-5개의 짧은 포인트로 압축. 단정한 문장체로. 너무 길어지지 않게.",
+        maxTokens: 700,
+      });
+
+      const summaryId = nid();
+      const summaryMsg = {
+        id: summaryId,
+        parentId,
+        role: "assistant",
+        content: summaryText,
+        isSummary: true,
+      };
+
+      updateActiveConv((c) => ({
+        messages: { ...c.messages, [summaryId]: summaryMsg },
+        activeLeafId: summaryId,
+      }));
+    } catch (e) {
+      const errId = nid();
+      updateActiveConv((c) => ({
+        messages: {
+          ...c.messages,
+          [errId]: {
+            id: errId,
+            parentId,
+            role: "assistant",
+            content:
+              "⚠ 정리를 만들지 못했어요: " + (e.message || "알 수 없는 오류"),
+          },
+        },
+        activeLeafId: errId,
+      }));
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   function getSiblingInfo(messageId) {
@@ -1234,6 +1334,27 @@ export default function App() {
                   </button>
                 </div>
               )}
+              {showSummaryTip && (
+                <div className="flex items-center gap-2 mb-2 text-xs px-3 py-2 bg-white border border-red-200/70 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0" />
+                  <span className="text-neutral-700 flex-1">
+                    여기까지의 흐름을 정리해 드릴까요?
+                  </span>
+                  <button
+                    onClick={handleSummarize}
+                    disabled={isLoading}
+                    className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-2.5 py-1 rounded text-[11px] uppercase tracking-wider font-medium transition"
+                  >
+                    정리
+                  </button>
+                  <button
+                    onClick={dismissSummaryTip}
+                    className="text-neutral-500 hover:text-neutral-900 px-2 py-0.5 rounded text-[11px] uppercase tracking-wider font-medium transition"
+                  >
+                    취소
+                  </button>
+                </div>
+              )}
               {isOnHoldingLeaf ? (
                 <div className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-4 text-sm text-neutral-500 text-center">
                   <span className="text-[11px] uppercase tracking-[0.18em] text-neutral-400 font-mono-ui">
@@ -1477,7 +1598,7 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
         </div>
         <div className="text-[13px] text-neutral-900 flex-1 truncate">
           파이{" "}
-          <span className="text-neutral-400 font-mono-ui text-[11px] tracking-wider uppercase ml-0.5">
+          <span className="text-neutral-400 font-mono-ui text-[10px] tracking-[0.2em] uppercase font-medium ml-0.5">
             · Pro
           </span>
         </div>
@@ -1557,6 +1678,12 @@ function MessageBlock({
         dimmed ? "opacity-30" : ""
       }`}
     >
+      {message.isSummary && (
+        <div className="flex items-center gap-2.5 mb-3 text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
+          <span>Summary</span>
+          <span className="flex-1 h-px bg-neutral-200" />
+        </div>
+      )}
       <div className="text-neutral-800 whitespace-pre-wrap break-words text-[15px] leading-[1.75]">
         {message.content}
       </div>
@@ -2130,7 +2257,7 @@ function TreePanel({
           }`}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] uppercase tracking-[0.18em] font-mono-ui text-neutral-400 font-medium">
+            <span className="text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
               Tip
             </span>
             <button
