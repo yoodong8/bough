@@ -1196,7 +1196,7 @@ export default function App() {
               <button
                 onClick={() => setTreeIntent(true)}
                 className="w-7 h-7 rounded-md hover:bg-stone-200/70 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
-                title="노드 트리 보기"
+                title="트리 열기"
               >
                 <TreeOpenIcon className="w-[18px] h-[18px]" />
               </button>
@@ -2366,7 +2366,7 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
         <button
           onClick={onHide}
           className="w-7 h-7 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
-          title="노드 트리 숨기기"
+          title="트리 닫기"
         >
           <TreeOpenIcon className="w-[18px] h-[18px]" />
         </button>
