@@ -476,6 +476,8 @@ export default function App() {
   const inputRef = useRef(null);
   const lastProgScrollAt = useRef(0);
   const suppressAutoScrollRef = useRef(false);
+  const suppressAutoHighlightRef = useRef(false);
+  const [newNodeIds, setNewNodeIds] = useState(() => new Set());
 
   const activeConv =
     conversations.find((c) => c.id === activeConvId) || conversations[0];
@@ -684,7 +686,9 @@ export default function App() {
   }, [currentPath, highlightedNodeId]);
 
   useEffect(() => {
-    if (currentPath.length > 0) {
+    if (suppressAutoHighlightRef.current) {
+      suppressAutoHighlightRef.current = false;
+    } else if (currentPath.length > 0) {
       const last = currentPath[currentPath.length - 1];
       setHighlightedNodeId(last);
     }
@@ -746,6 +750,21 @@ export default function App() {
       parentAi &&
       parentAi.parentId === convergedLeafId;
 
+    // Mark this user node so its incoming tree edge animates on first render.
+    setNewNodeIds((prev) => {
+      const next = new Set(prev);
+      next.add(userMsgId);
+      return next;
+    });
+    setTimeout(() => {
+      setNewNodeIds((prev) => {
+        if (!prev.has(userMsgId)) return prev;
+        const next = new Set(prev);
+        next.delete(userMsgId);
+        return next;
+      });
+    }, 700);
+
     updateActiveConv((c) => {
       const next = {
         messages: { ...c.messages, [userMsgId]: userMsg },
@@ -786,10 +805,15 @@ export default function App() {
         content: replyText,
       };
 
+      // Lock the tree highlight onto the user node that triggered this turn.
+      // Otherwise the auto-highlight effect would land on the AI leaf, which
+      // is invisible in the tree (only user nodes are drawn).
+      suppressAutoHighlightRef.current = true;
       updateActiveConv((c) => ({
         messages: { ...c.messages, [aiMsgId]: aiMsg },
         activeLeafId: aiMsgId,
       }));
+      setHighlightedNodeId(userMsgId);
 
       if (isBranching) {
         const label = await generateBranchLabel(text);
@@ -1141,6 +1165,15 @@ export default function App() {
         ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
         * { scrollbar-width: thin; scrollbar-color: #d6d3d1 transparent; }
         ::selection { background: #fecaca; color: #171717; }
+
+        @keyframes draw-edge {
+          from { stroke-dashoffset: 200; }
+          to   { stroke-dashoffset: 0; }
+        }
+        .tree-edge-new {
+          stroke-dasharray: 200;
+          animation: draw-edge 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
       `}</style>
 
       {!isNarrow && (
@@ -1468,6 +1501,7 @@ export default function App() {
             isTouchDevice={isTouchDevice}
             treeWidth={treeWidth}
             setTreeWidth={setTreeWidth}
+            newNodeIds={newNodeIds}
           />
         </div>
       )}
@@ -1541,6 +1575,7 @@ export default function App() {
             isTouchDevice={isTouchDevice}
             treeWidth={treeWidth}
             setTreeWidth={setTreeWidth}
+            newNodeIds={newNodeIds}
           />
         </div>
       )}
@@ -1963,6 +1998,7 @@ function TreePanel({
   isTouchDevice,
   treeWidth,
   setTreeWidth,
+  newNodeIds,
 }) {
   const MIN_W = 260;
   const MAX_W = 520;
@@ -2140,6 +2176,7 @@ function TreePanel({
                 : `M ${p.x} ${p.y + 6} C ${p.x} ${
                     (p.y + c.y) / 2
                   } ${c.x} ${(p.y + c.y) / 2} ${c.x} ${c.y - 6}`;
+            const isNew = newNodeIds && newNodeIds.has(m.id);
             return (
               <path
                 key={`e-${m.id}`}
@@ -2147,7 +2184,9 @@ function TreePanel({
                 stroke={stroke}
                 strokeWidth={inActivePath || inConverged ? "1.5" : "1.2"}
                 fill="none"
-                className="transition-all duration-300"
+                className={
+                  isNew ? "tree-edge-new" : "transition-all duration-300"
+                }
               />
             );
           })}
