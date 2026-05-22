@@ -478,6 +478,7 @@ export default function App() {
   const suppressAutoScrollRef = useRef(false);
   const suppressAutoHighlightRef = useRef(false);
   const [newNodeIds, setNewNodeIds] = useState(() => new Set());
+  const [flashConvergeId, setFlashConvergeId] = useState(null);
 
   const activeConv =
     conversations.find((c) => c.id === activeConvId) || conversations[0];
@@ -621,6 +622,12 @@ export default function App() {
       }
       return { nodeStates: next };
     });
+    if (state === "converged") {
+      setFlashConvergeId(userMsgId);
+      setTimeout(() => {
+        setFlashConvergeId((id) => (id === userMsgId ? null : id));
+      }, 700);
+    }
   }
 
   function updateActiveConv(updater) {
@@ -808,6 +815,11 @@ export default function App() {
       // Lock the tree highlight onto the user node that triggered this turn.
       // Otherwise the auto-highlight effect would land on the AI leaf, which
       // is invisible in the tree (only user nodes are drawn).
+      // Also bump lastProgScrollAt sync so the viewport-watching effect's
+      // immediate onScroll() (which runs before our suppress-respecting effect)
+      // is gated by the 700ms suppression window and doesn't pick a centered
+      // node based on the stale scroll position.
+      lastProgScrollAt.current = Date.now();
       suppressAutoHighlightRef.current = true;
       updateActiveConv((c) => ({
         messages: { ...c.messages, [aiMsgId]: aiMsg },
@@ -1167,12 +1179,50 @@ export default function App() {
         ::selection { background: #fecaca; color: #171717; }
 
         @keyframes draw-edge {
-          from { stroke-dashoffset: 200; }
+          from { stroke-dashoffset: 100; }
           to   { stroke-dashoffset: 0; }
         }
         .tree-edge-new {
-          stroke-dasharray: 200;
-          animation: draw-edge 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          stroke-dasharray: 100;
+          animation: draw-edge 360ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+        }
+        @keyframes pop-node {
+          from { transform: scale(0); }
+          to   { transform: scale(1); }
+        }
+        .tree-node-new {
+          animation: pop-node 460ms cubic-bezier(0.34, 1.56, 0.64, 1) 280ms both;
+        }
+        @keyframes pop-icon {
+          from { transform: scale(0); }
+          to   { transform: scale(1); }
+        }
+        .icon-pop {
+          animation: pop-icon 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        @keyframes pop-glow {
+          from { transform: scale(0); opacity: 0; }
+          to   { transform: scale(1); opacity: 1; }
+        }
+        .icon-glow-pop {
+          animation: pop-glow 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        @keyframes flash-edge {
+          0%   {
+            stroke-width: 1.5;
+            filter: drop-shadow(0 0 0 rgba(220, 38, 38, 0));
+          }
+          35%  {
+            stroke-width: 2.6;
+            filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.65));
+          }
+          100% {
+            stroke-width: 1.5;
+            filter: drop-shadow(0 0 0 rgba(220, 38, 38, 0));
+          }
+        }
+        .tree-edge-flash {
+          animation: flash-edge 540ms cubic-bezier(0.34, 1.56, 0.64, 1);
         }
       `}</style>
 
@@ -1246,11 +1296,8 @@ export default function App() {
             windowWidth={windowWidth}
           />
         ) : currentPath.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-center text-neutral-500 px-6">
+          <div className="flex-1 flex items-center justify-center pt-14 text-center text-neutral-500 px-6">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-400 mb-3 font-mono-ui">
-                Empty
-              </p>
               <p className="text-xl mb-2 text-neutral-900 tracking-tight">새 대화를 시작해 보세요</p>
               <p className="text-sm text-neutral-500">
                 AI 메시지의 분기 아이콘을 누르면 새 갈래로 이어집니다.
@@ -1502,6 +1549,7 @@ export default function App() {
             treeWidth={treeWidth}
             setTreeWidth={setTreeWidth}
             newNodeIds={newNodeIds}
+            flashConvergeId={flashConvergeId}
           />
         </div>
       )}
@@ -1576,6 +1624,7 @@ export default function App() {
             treeWidth={treeWidth}
             setTreeWidth={setTreeWidth}
             newNodeIds={newNodeIds}
+            flashConvergeId={flashConvergeId}
           />
         </div>
       )}
@@ -1999,6 +2048,7 @@ function TreePanel({
   treeWidth,
   setTreeWidth,
   newNodeIds,
+  flashConvergeId,
 }) {
   const MIN_W = 260;
   const MAX_W = 520;
@@ -2177,6 +2227,7 @@ function TreePanel({
                     (p.y + c.y) / 2
                   } ${c.x} ${(p.y + c.y) / 2} ${c.x} ${c.y - 6}`;
             const isNew = newNodeIds && newNodeIds.has(m.id);
+            const isFlashing = !!flashConvergeId && inConverged;
             return (
               <path
                 key={`e-${m.id}`}
@@ -2184,8 +2235,13 @@ function TreePanel({
                 stroke={stroke}
                 strokeWidth={inActivePath || inConverged ? "1.5" : "1.2"}
                 fill="none"
+                pathLength={isNew ? 100 : undefined}
                 className={
-                  isNew ? "tree-edge-new" : "transition-all duration-300"
+                  isNew
+                    ? "tree-edge-new"
+                    : isFlashing
+                    ? "tree-edge-flash transition-all duration-300"
+                    : "transition-all duration-300"
                 }
               />
             );
@@ -2256,8 +2312,18 @@ function TreePanel({
               }
             };
 
+            const isNewNode = newNodeIds && newNodeIds.has(m.id);
+
             return (
-              <g key={`n-${m.id}`}>
+              <g
+                key={`n-${m.id}`}
+                className={isNewNode ? "tree-node-new" : undefined}
+                style={
+                  isNewNode
+                    ? { transformOrigin: `${p.x}px ${p.y}px` }
+                    : undefined
+                }
+              >
                 <circle
                   cx={p.x}
                   cy={p.y}
@@ -2291,32 +2357,52 @@ function TreePanel({
                     r={14}
                     fill="#dc2626"
                     fillOpacity="0.12"
-                    className="pointer-events-none"
+                    className={`pointer-events-none${
+                      m.id === flashConvergeId ? " icon-glow-pop" : ""
+                    }`}
+                    style={
+                      m.id === flashConvergeId
+                        ? {
+                            transformBox: "fill-box",
+                            transformOrigin: "center",
+                          }
+                        : undefined
+                    }
                   />
                 )}
                 {isHolding || isConverged ? (() => {
                   const big = isHighlight || isHover || isCompareSel || isBranchSrc;
                   const size = big ? 20 : 16;
+                  const popping = isConverged && m.id === flashConvergeId;
                   return (
                     <g
                       transform={`translate(${p.x - size / 2}, ${p.y - size / 2})`}
                       className="pointer-events-none transition-all duration-200"
                     >
-                      {isConverged ? (
-                        <AppleIcon
-                          size={size}
-                          bodyColor="#dc2626"
-                          leafColor="#16a34a"
-                          strokeWidth={1.5}
-                        />
-                      ) : (
-                        <EyeOff
-                          width={size}
-                          height={size}
-                          stroke="#a8a29e"
-                          strokeWidth={1.5}
-                        />
-                      )}
+                      <g
+                        className={popping ? "icon-pop" : undefined}
+                        style={
+                          popping
+                            ? { transformOrigin: `${size / 2}px ${size / 2}px` }
+                            : undefined
+                        }
+                      >
+                        {isConverged ? (
+                          <AppleIcon
+                            size={size}
+                            bodyColor="#dc2626"
+                            leafColor="#16a34a"
+                            strokeWidth={1.5}
+                          />
+                        ) : (
+                          <EyeOff
+                            width={size}
+                            height={size}
+                            stroke="#a8a29e"
+                            strokeWidth={1.5}
+                          />
+                        )}
+                      </g>
                     </g>
                   );
                 })() : (
