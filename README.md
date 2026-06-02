@@ -1,110 +1,139 @@
-# Branch Chat
+<div align="center">
 
-LLM 채팅에서 아이디어 갈래를 잃지 않고 탐색할 수 있는 인터페이스. 모든 분기를 트리로 시각화하고, 갈래 간 비교·상태 표시·되돌아오기를 지원한다.
+# bough
 
-배포: [branch-chat-one.vercel.app](https://branch-chat-one.vercel.app)
+**Branch your thinking, follow the bough.**
 
----
+A chat interface that treats conversation as a tree, not a scroll. Branch off any message, navigate between threads, and converge on the path that matters.
 
-## 해결하려는 문제
+<sub>Swiss / Dieter Rams design language · single accent · structure over decoration</sub>
 
-기획자의 아이디에이션은 본질적으로 **분기·비교·회귀**로 이뤄지지만, 기존 LLM 채팅 UX는 모든 발화를 시간순 단일 스레드에 append-only로 쌓는다. 그 결과:
-
-- **ChatGPT의 '새 채팅으로 브랜치'** — 갈래를 별도 채팅으로 분리해버려 한 화면에서 비교할 수 없음
-- **Claude의 '편집' 기능** — 분기를 버전 토글 뒤에 숨겨놓아 존재 자체를 인지하기 어려움
-- **Cmd+F 검색** — 같은 키워드가 여러 메시지에 흩어져 있어 그 순간을 특정할 수 없음
-
-세 도구 모두 **분기를 만드는 수단**은 제공하지만, **만들어진 분기들을 한 화면에서 보고·비교하고·표시하는 수단**은 사용자의 기억에 떠넘긴다.
+</div>
 
 ---
 
-## 핵심 기능
+## Why "Bough"
 
-### 트리 시각화
+A *bough* is the main limb of a tree — the thick branch that splits from the trunk and carries the smaller branches and leaves.
 
-채팅 우측에 대화 전체가 점으로 이뤄진 트리로 그려진다. 각 점은 사용자-AI 한 쌍, 갈래가 생기면 트리에 새 가지가 옆으로 뻗는다. 상단 아이콘으로 패널 열고 닫기.
+Most chat tools force a single linear scroll. Real thinking doesn't work that way: you explore a tangent, back out, try a different framing, compare two directions. Bough makes that structure first-class. Where an ordinary "branch" is just another twig, a **bough** is a deliberate, load-bearing direction — and that's the metaphor the whole product is built around.
 
-### 가지치기
+> tree → **bough** → branch → leaf
 
-AI 메시지 하단의 가지치기 아이콘을 누르면 → 이후 대화가 흐려지고 새 갈래로 이어갈 수 있다. 기존 갈래는 사라지지 않고 트리에 보존된다.
-
-분기점에서 좌·우 버튼으로 갈래 빠르게 전환.
-
-### 자동 라벨
-
-각 갈래의 첫 메시지로 LLM이 2-3 단어 라벨을 자동 생성해 트리의 점에 호버하면 툴팁으로 표시. "버전 2" 같은 식별자가 아니라 "관계 피로감", "단어 그 자체"처럼 내용 자체로 식별됨.
-
-### 트리 ↔ 대화창 연동
-
-- 트리의 점 클릭 → 해당 메시지로 스크롤 + 점·브랜치 하이라이트
-- 이미 하이라이트된 점 한 번 더 클릭 → 메시지에 펄스 효과
-- 대화창 스크롤 → 보고 있는 메시지의 점이 트리에서 자동 강조
-- 최상단·최하단으로 스크롤 시 첫·마지막 메시지로 스냅
-
-### 보류·수렴 상태
-
-가지의 끝 점을 우클릭(또는 모바일에서 길게 누르기)하면 두 가지 상태 선택 가능:
-
-- **보류** (EyeOff 아이콘) — 막다른 갈래임을 표시. 해당 점·이후 대화가 어두워지고, 그 갈래에서 입력 비활성화. 여러 개 가능.
-- **수렴** (Flag 아이콘) — 최종 방향임을 표시. 루트~수렴점 경로에 강조 효과. 한 가지에만 지정 가능. 새 메시지 입력 시 새 점으로 상태 자동 이전.
-
-분기점이라도 모든 하위 갈래가 보류면 그 분기점도 끝 점으로 인식되어 상태 지정 가능.
-
-### 분할 비교
-
-트리 상단의 비교 토글 → 두 점 선택 → 채팅창이 두 영역으로 분할되어 분기점 이후 내용이 나란히 표시. 화면이 좁아지면 위·아래 스택으로 자동 전환. 각 영역은 독립적으로 스크롤.
-
-### 반응형 & 모바일
-
-- 화면 너비 880px 미만 → 양쪽 패널 자동 접힘 + 다시 열면 채팅 위에 오버레이(블러 효과)
-- 사용자 의도 스냅샷 보존 → 화면 다시 넓어지면 원래 상태로 복귀
-- 모바일에서 좌·우 스와이프로 패널 열기/닫기
-- 노치·홈 인디케이터 안전 영역 자동 처리 (`env(safe-area-inset-*)`)
-- 입력 장치 자동 감지 — 마우스 환경엔 "우클릭", 터치 환경엔 "길게 누르기" 안내
+The node tree on the right isn't decoration. It *is* the conversation.
 
 ---
 
-## 기술 스택
+## Core idea
 
-- **Next.js 14** (app router) + React 18
-- **Tailwind CSS** (core utilities only)
-- **lucide-react** — 아이콘
-- **Google Gemini API** (`gemini-2.5-flash`) — LLM 응답·라벨 생성
-- **Vercel** — 배포 호스팅
+Conversations are stored as a flat map of messages linked by `parentId`, and rendered as a tree where **only user messages become nodes**. A recursive walk alternates `user → AI → user` down each path. The thread you're reading (`currentPath`) is whatever you get by walking the `parentId` chain up from the active leaf to the root.
+
+This means you can:
+
+- **Branch** from any AI message into a new sibling thread instead of overwriting context
+- **Navigate** between threads by clicking nodes in the tree
+- **Compare** two paths side by side
+- **Converge** on a single resolved path, or **hold** branches you've set aside
 
 ---
 
-## 프로젝트 구조
+## Key interactions
+
+Ordered the way you'd encounter them.
+
+1. **First launch** — Chat and tree panels share the screen. Both empty states align on the same horizontal axis.
+2. **Send** — Platform-aware composer. Desktop: `Enter` sends, `Shift+Enter` for a newline. Touch (`pointer: coarse`): `Enter` newlines, a dedicated send button submits. On send, the user bubble appears, the AI response streams, and the first tree node draws in.
+3. **Continue** — Each turn appends to `currentPath`; the highlight auto-follows the newest node.
+4. **Toggle tree** — Slide the tree panel in/out (400ms standard ease).
+5. **Branch** — Hover an AI message → branch icon. Click it to enter a *pending* branch state (red border tip on the composer); your next message starts a new sibling thread.
+6. **Navigate** — Click any node to recompute `currentPath` and re-render that thread.
+7. **Compare** — Select nodes to view paths side by side.
+8. **Converge** — Mark one path as resolved (only one converged node at a time). The path edges transition to the accent color with a single highlight pulse.
+9. **Hold** — Set a branch aside; its child edges stop rendering.
+10. **Summary tip** — After enough turns, an optional tip offers to summarize the thread so far. Summaries render as sidecars so they never break the tree's `user → AI → user` alternation.
+
+---
+
+## Design language
+
+Bough follows a Swiss / Dieter Rams sensibility: structure and hierarchy over ornament.
+
+| Token | Value | Role |
+| --- | --- | --- |
+| Base surface | `stone-50` `#FAFAF9` | App background |
+| Card / composer | `white` `#FFFFFF` | Elevated surfaces |
+| Hairline | `neutral-200` `#E5E5E5` | Primary separator (not shadow) |
+| Body / current position | `neutral-900` `#171717` | Text, active node |
+| Accent | `red-600` `#DC2626` | **Marked intent only** |
+
+**Single-accent rule.** Red is reserved exclusively for *marked intent* — convergence, a pending branch, a compare selection, the summary tip. Black means "current position," gray means inactive. Red never appears as ordinary decoration.
+
+**Type.** Pretendard Variable for body, IBM Plex Mono for micro-labels and specs.
+
+**Motion.** Standard transitions use `cubic-bezier(0.16, 1, 0.3, 1)`; entrance and state-change moments share one overshoot curve `cubic-bezier(0.34, 1.56, 0.64, 1)`. Tree edges draw in over 360ms; nodes enter ~280ms later so the line "arrives" before the dot appears.
+
+---
+
+## Tech stack
+
+- **Next.js** (App Router) — single-file `page.jsx` client component
+- **React** hooks for all state (no external store)
+- **lucide-react** for iconography (plus a custom two-color apple mark for the converged state)
+- **Tailwind CSS** utility styling
+- LLM via `POST /api/chat` with `{ system, messages, maxTokens }`
+
+### Project structure
 
 ```
 app/
-├── page.jsx                  메인 UI (전체 인터랙션 로직)
-├── layout.jsx                메타데이터 + viewport (safe-area 지원)
-├── globals.css               Tailwind 전역
-├── icon.png                  파비콘
-└── api/
-    ├── chat/route.js         LLM 응답 프록시
-    └── branch-label/route.js 분기 라벨 생성 프록시
+  page.jsx        # entire UI: composer, chat, node tree, branching logic
+  api/
+    chat/         # LLM endpoint — accepts { system, messages, maxTokens }
 ```
 
-API 라우트는 클라이언트에서 키 노출을 방지하기 위한 Gemini API 서버 프록시.
-
----
-
-## 로컬 실행
+### Getting started
 
 ```bash
 npm install
-echo "GEMINI_API_KEY=your_key_here" > .env.local
 npm run dev
+# open http://localhost:3000
 ```
 
-`.env.local`에 [Google AI Studio](https://aistudio.google.com)에서 발급한 키 입력.
+Set whatever credentials your `/api/chat` route needs in `.env.local`:
 
-배포 시 Vercel 프로젝트의 Environment Variables에 같은 키 등록 필요.
+```bash
+# .env.local
+ANTHROPIC_API_KEY=your_key_here
+```
 
 ---
 
-## 만든 사람
+## State model (for contributors)
 
-[@yoodong8](https://github.com/yoodong8) · 디자이너 / 기획자
+| Concept | Shape | Notes |
+| --- | --- | --- |
+| Message | `{ id, parentId, role, content, branchLabel?, isSummary? }` | Flat map keyed by `id` |
+| `currentPath` | `id[]` | Walk `parentId` from active leaf to root |
+| `nodeStates` | `{ [id]: "converged" \| "holding" }` | At most one `converged`; many `holding` |
+| Summary | message with `isSummary: true` | Rendered as a sidecar, kept out of the path so it doesn't break tree alternation |
+
+A few implementation notes worth knowing:
+
+- **Highlight after send** — a `suppressAutoHighlightRef` flag stops the viewport-center detector from briefly latching onto the AI message during programmatic scroll, so the highlight lands on the new user node.
+- **Summary dismissal** — driven by a snapshot of `{ userMessageCount, nodeStatesRef }`; it auto-invalidates on new input, a convergence change, or re-toggling the same node.
+- **Touch detection** — `window.matchMedia("(pointer: coarse)")` drives the composer's send/newline split.
+
+---
+
+## Roadmap
+
+- [ ] Persist conversations (currently in-memory)
+- [ ] Export a bough (single path) as Markdown
+- [ ] Keyboard navigation across the tree
+- [ ] Shared/read-only bough links
+
+---
+
+## License
+
+MIT
