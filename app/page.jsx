@@ -11,7 +11,6 @@ import {
   Copy,
   ThumbsUp,
   ThumbsDown,
-  RotateCcw,
   PanelLeft,
   Search,
   Code2,
@@ -1951,9 +1950,6 @@ function MessageBlock({
         </ActionButton>
         <ActionButton title="별로인 응답">
           <ThumbsDown className="w-3.5 h-3.5" />
-        </ActionButton>
-        <ActionButton title="재시도">
-          <RotateCcw className="w-3.5 h-3.5" />
         </ActionButton>
         <ActionButton
           title="브랜치 생성"
