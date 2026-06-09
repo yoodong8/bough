@@ -1123,6 +1123,23 @@ export default function App() {
     return cur;
   }
 
+  // If a tip user node forks (its AI reply has 2+ user children), return each
+  // diverging child's own branch tip. Empty when it doesn't fork. Used by the
+  // compare view to offer "다음 갈래 비교하기" instead of converge/hold on a
+  // junction, drilling one fork level deeper.
+  function forkChildTips(tipUserId) {
+    const msgs = activeConv.messages;
+    const ai = Object.values(msgs).find(
+      (m) => m.parentId === tipUserId && m.role === "assistant"
+    );
+    if (!ai) return [];
+    const userChildren = Object.values(msgs)
+      .filter((m) => m.parentId === ai.id && m.role === "user")
+      .sort((a, b) => (a.id < b.id ? -1 : 1));
+    if (userChildren.length < 2) return [];
+    return userChildren.map((u) => branchTipUser(u.id));
+  }
+
   // Set the active leaf, highlight a node, and scroll it into view.
   function landOnNode(highlightId, leafId) {
     updateActiveConv(() => ({ activeLeafId: leafId }));
@@ -1352,6 +1369,8 @@ export default function App() {
             onSetNodeState={setNodeState}
             onOpenBranch={openBranch}
             getBranchTipUser={branchTipUser}
+            getForkTips={forkChildTips}
+            onCompareForks={(tips) => setCompareNodes(tips.slice(0, 2))}
           />
         ) : currentPath.length === 0 ? (
           <div className="flex-1 flex items-center justify-center pt-14 text-center text-neutral-500 px-6">
@@ -2685,6 +2704,8 @@ function CompareView({
   onSetNodeState,
   onOpenBranch,
   getBranchTipUser,
+  getForkTips,
+  onCompareForks,
 }) {
   const isWide = (windowWidth ?? 1200) >= 1200;
   const scrollRefs = useRef([]);
@@ -2717,6 +2738,10 @@ function CompareView({
           }
           const node = messages[nodeId];
           const state = getNodeState?.(tipId) || null;
+          // When the tip is a fork junction, converge/hold are ambiguous —
+          // offer drilling into the diverging sub-branches instead.
+          const subTips = getForkTips?.(tipId) ?? [];
+          const isJunction = subTips.length >= 2;
           let lbl = null;
           let cur = nodeId;
           while (cur) {
@@ -2773,45 +2798,56 @@ function CompareView({
                   );
                 })}
               </div>
-              {/* Decision bar — mark this branch (converge/hold) and/or open it */}
+              {/* Decision bar — a fork junction can't be converged/held; it
+                  drills into its sub-branches instead. A real tip marks. */}
               <div className="px-4 py-2.5 border-t border-neutral-100 flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  {[
-                    {
-                      key: "converged",
-                      label: "수렴",
-                      icon: (
-                        <AppleIcon className="w-3.5 h-3.5" outline strokeWidth={2} />
-                      ),
-                    },
-                    {
-                      key: "holding",
-                      label: "보류",
-                      icon: <EyeOff className="w-3.5 h-3.5" />,
-                    },
-                  ].map(({ key, label, icon }) => {
-                    const isCurrent = state === key;
-                    const isConvergedItem = key === "converged";
-                    return (
-                      <button
-                        key={key}
-                        onClick={() =>
-                          onSetNodeState?.(tipId, isCurrent ? null : key)
-                        }
-                        className={`flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight transition ${
-                          isCurrent
-                            ? isConvergedItem
-                              ? "bg-red-50 text-red-600 ring-1 ring-red-200"
-                              : "bg-stone-100 text-neutral-900 ring-1 ring-neutral-300"
-                            : "text-neutral-500 hover:bg-stone-100 hover:text-neutral-900"
-                        }`}
-                      >
-                        {icon}
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {isJunction ? (
+                  <button
+                    onClick={() => onCompareForks?.(subTips)}
+                    className="flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight text-neutral-600 ring-1 ring-neutral-200 transition hover:bg-stone-100 hover:text-neutral-900"
+                  >
+                    <Split className="w-3.5 h-3.5" />
+                    다음 갈래 비교하기
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    {[
+                      {
+                        key: "converged",
+                        label: "수렴",
+                        icon: (
+                          <AppleIcon className="w-3.5 h-3.5" outline strokeWidth={2} />
+                        ),
+                      },
+                      {
+                        key: "holding",
+                        label: "보류",
+                        icon: <EyeOff className="w-3.5 h-3.5" />,
+                      },
+                    ].map(({ key, label, icon }) => {
+                      const isCurrent = state === key;
+                      const isConvergedItem = key === "converged";
+                      return (
+                        <button
+                          key={key}
+                          onClick={() =>
+                            onSetNodeState?.(tipId, isCurrent ? null : key)
+                          }
+                          className={`flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight transition ${
+                            isCurrent
+                              ? isConvergedItem
+                                ? "bg-red-50 text-red-600 ring-1 ring-red-200"
+                                : "bg-stone-100 text-neutral-900 ring-1 ring-neutral-300"
+                              : "text-neutral-500 hover:bg-stone-100 hover:text-neutral-900"
+                          }`}
+                        >
+                          {icon}
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 <span className="flex-1" />
                 <button
                   onClick={() => onOpenBranch?.(tipId)}
