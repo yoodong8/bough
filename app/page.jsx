@@ -1080,10 +1080,10 @@ export default function App() {
     focusNodeLeaf(nodeId);
   }
 
-  // Walk down from nodeId to its leaf (preferring nodes already on the current
-  // path), set it active, highlight nodeId, and scroll it into view. Shared by
-  // tree-node clicks and "이어가기" from the compare view.
-  function focusNodeLeaf(nodeId) {
+  // Walk down from nodeId to its branch tip (leaf), preferring nodes already on
+  // the current path. Pure — no side effects. The compare view treats a card as
+  // a single branch, so converge/hold/continue all target this tip.
+  function branchLeafOf(nodeId) {
     let leaf = nodeId;
     while (true) {
       const ch = getChildren(leaf).filter((c) => !c.isSummary);
@@ -1097,6 +1097,13 @@ export default function App() {
       }
       leaf = next.id;
     }
+    return leaf;
+  }
+
+  // Descend to the branch tip, set it active, highlight nodeId, scroll into
+  // view. Shared by tree-node clicks and "이어가기" from the compare view.
+  function focusNodeLeaf(nodeId) {
+    const leaf = branchLeafOf(nodeId);
     updateActiveConv(() => ({ activeLeafId: leaf }));
     lastProgScrollAt.current = Date.now();
     setHighlightedNodeId(nodeId);
@@ -1110,12 +1117,12 @@ export default function App() {
     }, 60);
   }
 
-  // Exit compare mode and continue writing on the chosen branch. Independent of
-  // converge/hold marking — any branch can be continued.
-  function continueBranch(nodeId) {
+  // Exit compare mode and continue writing at the chosen branch's tip.
+  // Independent of converge/hold marking — any branch can be continued.
+  function continueBranch(leafId) {
     setCompareMode(false);
     setCompareNodes([]);
-    focusNodeLeaf(nodeId);
+    focusNodeLeaf(leafId);
   }
 
   function toggleCompare() {
@@ -1313,6 +1320,7 @@ export default function App() {
             getNodeState={getNodeState}
             onSetNodeState={setNodeState}
             onContinueBranch={continueBranch}
+            getBranchLeaf={branchLeafOf}
           />
         ) : currentPath.length === 0 ? (
           <div className="flex-1 flex items-center justify-center pt-14 text-center text-neutral-500 px-6">
@@ -2645,6 +2653,7 @@ function CompareView({
   getNodeState,
   onSetNodeState,
   onContinueBranch,
+  getBranchLeaf,
 }) {
   const isWide = (windowWidth ?? 1200) >= 1200;
   const scrollRefs = useRef([]);
@@ -2673,7 +2682,9 @@ function CompareView({
             if (aiChild) path.push(aiChild.id);
           }
           const node = messages[nodeId];
-          const state = getNodeState?.(nodeId) || null;
+          // Card represents the whole branch; mark/continue act on its tip.
+          const leafId = getBranchLeaf?.(nodeId) ?? nodeId;
+          const state = getNodeState?.(leafId) || null;
           let lbl = null;
           let cur = nodeId;
           while (cur) {
@@ -2753,7 +2764,7 @@ function CompareView({
                       <button
                         key={key}
                         onClick={() =>
-                          onSetNodeState?.(nodeId, isCurrent ? null : key)
+                          onSetNodeState?.(leafId, isCurrent ? null : key)
                         }
                         className={`flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight transition ${
                           isCurrent
@@ -2771,7 +2782,7 @@ function CompareView({
                 </div>
                 <span className="flex-1" />
                 <button
-                  onClick={() => onContinueBranch?.(nodeId)}
+                  onClick={() => onContinueBranch?.(leafId)}
                   className="flex items-center gap-1 pl-3 pr-2.5 h-8 rounded-md bg-neutral-900 text-white text-[13px] font-medium tracking-tight transition hover:bg-neutral-800"
                 >
                   이어가기
