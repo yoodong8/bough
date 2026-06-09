@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Branch Chat",
-  description: "Branching LLM chat for ideation",
+  title: "Bough",
+  description: "Branch your thinking, follow the bough.",
 };
 
 export const viewport = {
