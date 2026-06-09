@@ -1959,6 +1959,7 @@ function MessageBlock({
           title="브랜치 생성"
           onClick={onBranch}
           highlighted={isPendingBranchSource}
+          hoverAccent
         >
           <Split className="w-3.5 h-3.5 rotate-180" />
         </ActionButton>
@@ -1967,7 +1968,7 @@ function MessageBlock({
   );
 }
 
-function ActionButton({ children, title, onClick, highlighted }) {
+function ActionButton({ children, title, onClick, highlighted, hoverAccent }) {
   const [hovered, setHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState(null);
   const btnRef = useRef(null);
@@ -1993,6 +1994,8 @@ function ActionButton({ children, title, onClick, highlighted }) {
         className={`w-7 h-7 rounded-md flex items-center justify-center transition ${
           highlighted
             ? "bg-red-50 text-red-600 ring-1 ring-red-200"
+            : hoverAccent
+            ? "text-neutral-400 hover:bg-stone-100 hover:text-red-600"
             : "text-neutral-400 hover:bg-stone-100 hover:text-neutral-700"
         }`}
       >
