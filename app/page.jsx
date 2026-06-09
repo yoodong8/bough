@@ -1100,16 +1100,37 @@ export default function App() {
     return leaf;
   }
 
-  // Descend to the branch tip, set it active, highlight nodeId, scroll into
-  // view. Shared by tree-node clicks and "이어가기" from the compare view.
-  function focusNodeLeaf(nodeId) {
-    const leaf = branchLeafOf(nodeId);
-    updateActiveConv(() => ({ activeLeafId: leaf }));
+  // Descend from a user node through its single linear continuation, stopping at
+  // the first fork (a fork = an AI reply with more than one user child) or the
+  // branch end. Returns the last user node before any split — the unambiguous
+  // tip the compare card converges/holds/continues on. If nodeId itself forks
+  // immediately, returns nodeId (the junction / "bough").
+  function branchTipUser(nodeId) {
+    const msgs = activeConv.messages;
+    let cur = nodeId;
+    if (msgs[cur]?.role !== "user") return cur;
+    while (true) {
+      const ai = Object.values(msgs).find(
+        (m) => m.parentId === cur && m.role === "assistant"
+      );
+      if (!ai) break;
+      const userChildren = Object.values(msgs).filter(
+        (m) => m.parentId === ai.id && m.role === "user"
+      );
+      if (userChildren.length !== 1) break;
+      cur = userChildren[0].id;
+    }
+    return cur;
+  }
+
+  // Set the active leaf, highlight a node, and scroll it into view.
+  function landOnNode(highlightId, leafId) {
+    updateActiveConv(() => ({ activeLeafId: leafId }));
     lastProgScrollAt.current = Date.now();
-    setHighlightedNodeId(nodeId);
+    setHighlightedNodeId(highlightId);
 
     setTimeout(() => {
-      const el = messageRefs.current[nodeId];
+      const el = messageRefs.current[highlightId];
       if (el) {
         lastProgScrollAt.current = Date.now();
         el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1117,12 +1138,21 @@ export default function App() {
     }, 60);
   }
 
-  // Exit compare mode and continue writing at the chosen branch's tip.
-  // Independent of converge/hold marking — any branch can be continued.
-  function continueBranch(leafId) {
+  // Descend to the branch tip, set it active, highlight nodeId, scroll into
+  // view. Used by tree-node clicks.
+  function focusNodeLeaf(nodeId) {
+    landOnNode(nodeId, branchLeafOf(nodeId));
+  }
+
+  // Exit compare mode and continue writing at the branch tip. Lands on the tip's
+  // AI reply so the next message extends from it. Independent of converge/hold.
+  function continueBranch(tipUserId) {
     setCompareMode(false);
     setCompareNodes([]);
-    focusNodeLeaf(leafId);
+    const aiChild = Object.values(activeConv.messages).find(
+      (m) => m.parentId === tipUserId && m.role === "assistant"
+    );
+    landOnNode(tipUserId, aiChild?.id ?? tipUserId);
   }
 
   function toggleCompare() {
@@ -1320,7 +1350,7 @@ export default function App() {
             getNodeState={getNodeState}
             onSetNodeState={setNodeState}
             onContinueBranch={continueBranch}
-            getBranchLeaf={branchLeafOf}
+            getBranchTipUser={branchTipUser}
           />
         ) : currentPath.length === 0 ? (
           <div className="flex-1 flex items-center justify-center pt-14 text-center text-neutral-500 px-6">
@@ -2653,7 +2683,7 @@ function CompareView({
   getNodeState,
   onSetNodeState,
   onContinueBranch,
-  getBranchLeaf,
+  getBranchTipUser,
 }) {
   const isWide = (windowWidth ?? 1200) >= 1200;
   const scrollRefs = useRef([]);
@@ -2673,7 +2703,10 @@ function CompareView({
         style={{ maxWidth: "1100px" }}
       >
         {nodes.map((nodeId, i) => {
-          const path = getPathTo(nodeId);
+          // Card represents the whole branch down to its tip (stopping at any
+          // fork); mark/continue act on that tip so what you see = what you act on.
+          const tipId = getBranchTipUser?.(nodeId) ?? nodeId;
+          const path = getPathTo(tipId);
           const last = path[path.length - 1];
           if (messages[last]?.role === "user") {
             const aiChild = Object.values(messages).find(
@@ -2682,9 +2715,7 @@ function CompareView({
             if (aiChild) path.push(aiChild.id);
           }
           const node = messages[nodeId];
-          // Card represents the whole branch; mark/continue act on its tip.
-          const leafId = getBranchLeaf?.(nodeId) ?? nodeId;
-          const state = getNodeState?.(leafId) || null;
+          const state = getNodeState?.(tipId) || null;
           let lbl = null;
           let cur = nodeId;
           while (cur) {
@@ -2764,7 +2795,7 @@ function CompareView({
                       <button
                         key={key}
                         onClick={() =>
-                          onSetNodeState?.(leafId, isCurrent ? null : key)
+                          onSetNodeState?.(tipId, isCurrent ? null : key)
                         }
                         className={`flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight transition ${
                           isCurrent
@@ -2782,7 +2813,7 @@ function CompareView({
                 </div>
                 <span className="flex-1" />
                 <button
-                  onClick={() => onContinueBranch?.(leafId)}
+                  onClick={() => onContinueBranch?.(tipId)}
                   className="flex items-center gap-1 pl-3 pr-2.5 h-8 rounded-md bg-neutral-900 text-white text-[13px] font-medium tracking-tight transition hover:bg-neutral-800"
                 >
                   이어가기
