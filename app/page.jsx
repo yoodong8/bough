@@ -2001,7 +2001,7 @@ function MessageBlock({
                 title={title}
                 className={`w-7 h-7 rounded-md flex items-center justify-center transition ${
                   selected
-                    ? "text-neutral-400"
+                    ? "text-neutral-500"
                     : "text-neutral-400 hover:bg-stone-100 hover:text-neutral-700"
                 }`}
               >
