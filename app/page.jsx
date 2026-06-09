@@ -21,6 +21,7 @@ import {
   Mic,
   ArrowUp,
   ArrowUpRight,
+  ArrowRight,
   Share2,
   Loader2,
   Check,
@@ -1076,6 +1077,13 @@ export default function App() {
       return;
     }
 
+    focusNodeLeaf(nodeId);
+  }
+
+  // Walk down from nodeId to its leaf (preferring nodes already on the current
+  // path), set it active, highlight nodeId, and scroll it into view. Shared by
+  // tree-node clicks and "이어가기" from the compare view.
+  function focusNodeLeaf(nodeId) {
     let leaf = nodeId;
     while (true) {
       const ch = getChildren(leaf).filter((c) => !c.isSummary);
@@ -1100,6 +1108,14 @@ export default function App() {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }, 60);
+  }
+
+  // Exit compare mode and continue writing on the chosen branch. Independent of
+  // converge/hold marking — any branch can be continued.
+  function continueBranch(nodeId) {
+    setCompareMode(false);
+    setCompareNodes([]);
+    focusNodeLeaf(nodeId);
   }
 
   function toggleCompare() {
@@ -1294,6 +1310,9 @@ export default function App() {
             messages={activeConv.messages}
             getPathTo={getPathTo}
             windowWidth={windowWidth}
+            getNodeState={getNodeState}
+            onSetNodeState={setNodeState}
+            onContinueBranch={continueBranch}
           />
         ) : currentPath.length === 0 ? (
           <div className="flex-1 flex items-center justify-center pt-14 text-center text-neutral-500 px-6">
@@ -2618,7 +2637,15 @@ function Toggle({ on }) {
 // ============================================================
 // Compare View
 // ============================================================
-function CompareView({ nodes, messages, getPathTo, windowWidth }) {
+function CompareView({
+  nodes,
+  messages,
+  getPathTo,
+  windowWidth,
+  getNodeState,
+  onSetNodeState,
+  onContinueBranch,
+}) {
   const isWide = (windowWidth ?? 1200) >= 1200;
   const scrollRefs = useRef([]);
 
@@ -2646,6 +2673,7 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
             if (aiChild) path.push(aiChild.id);
           }
           const node = messages[nodeId];
+          const state = getNodeState?.(nodeId) || null;
           let lbl = null;
           let cur = nodeId;
           while (cur) {
@@ -2701,6 +2729,54 @@ function CompareView({ nodes, messages, getPathTo, windowWidth }) {
                     </div>
                   );
                 })}
+              </div>
+              {/* Decision bar — mark this branch and/or continue writing on it */}
+              <div className="px-4 py-2.5 border-t border-neutral-100 flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {[
+                    {
+                      key: "converged",
+                      label: "수렴",
+                      icon: (
+                        <AppleIcon className="w-3.5 h-3.5" outline strokeWidth={2} />
+                      ),
+                    },
+                    {
+                      key: "holding",
+                      label: "보류",
+                      icon: <EyeOff className="w-3.5 h-3.5" />,
+                    },
+                  ].map(({ key, label, icon }) => {
+                    const isCurrent = state === key;
+                    const isConvergedItem = key === "converged";
+                    return (
+                      <button
+                        key={key}
+                        onClick={() =>
+                          onSetNodeState?.(nodeId, isCurrent ? null : key)
+                        }
+                        className={`flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight transition ${
+                          isCurrent
+                            ? isConvergedItem
+                              ? "bg-red-50 text-red-600 ring-1 ring-red-200"
+                              : "bg-stone-100 text-neutral-900 ring-1 ring-neutral-300"
+                            : "text-neutral-500 hover:bg-stone-100 hover:text-neutral-900"
+                        }`}
+                      >
+                        {icon}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="flex-1" />
+                <button
+                  onClick={() => onContinueBranch?.(nodeId)}
+                  className="flex items-center gap-1 pl-3 pr-2.5 h-8 rounded-md bg-neutral-900 text-white text-[13px] font-medium tracking-tight transition hover:bg-neutral-800"
+                >
+                  이어가기
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           );
