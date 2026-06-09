@@ -1103,7 +1103,7 @@ export default function App() {
   // Descend from a user node through its single linear continuation, stopping at
   // the first fork (a fork = an AI reply with more than one user child) or the
   // branch end. Returns the last user node before any split — the unambiguous
-  // tip the compare card converges/holds/continues on. If nodeId itself forks
+  // tip the compare card converges/holds/opens on. If nodeId itself forks
   // immediately, returns nodeId (the junction / "bough").
   function branchTipUser(nodeId) {
     const msgs = activeConv.messages;
@@ -1144,9 +1144,10 @@ export default function App() {
     landOnNode(nodeId, branchLeafOf(nodeId));
   }
 
-  // Exit compare mode and continue writing at the branch tip. Lands on the tip's
-  // AI reply so the next message extends from it. Independent of converge/hold.
-  function continueBranch(tipUserId) {
+  // Exit compare mode and open the branch at its tip — lands on the tip's AI
+  // reply so a converged branch continues naturally (a held branch opens for
+  // viewing, input stays blocked). Independent of converge/hold marking.
+  function openBranch(tipUserId) {
     setCompareMode(false);
     setCompareNodes([]);
     const aiChild = Object.values(activeConv.messages).find(
@@ -1349,7 +1350,7 @@ export default function App() {
             windowWidth={windowWidth}
             getNodeState={getNodeState}
             onSetNodeState={setNodeState}
-            onContinueBranch={continueBranch}
+            onOpenBranch={openBranch}
             getBranchTipUser={branchTipUser}
           />
         ) : currentPath.length === 0 ? (
@@ -2682,7 +2683,7 @@ function CompareView({
   windowWidth,
   getNodeState,
   onSetNodeState,
-  onContinueBranch,
+  onOpenBranch,
   getBranchTipUser,
 }) {
   const isWide = (windowWidth ?? 1200) >= 1200;
@@ -2772,7 +2773,7 @@ function CompareView({
                   );
                 })}
               </div>
-              {/* Decision bar — mark this branch and/or continue writing on it */}
+              {/* Decision bar — mark this branch (converge/hold) and/or open it */}
               <div className="px-4 py-2.5 border-t border-neutral-100 flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   {[
@@ -2813,10 +2814,10 @@ function CompareView({
                 </div>
                 <span className="flex-1" />
                 <button
-                  onClick={() => onContinueBranch?.(tipId)}
+                  onClick={() => onOpenBranch?.(tipId)}
                   className="flex items-center gap-1 pl-3 pr-2.5 h-8 rounded-md bg-neutral-900 text-white text-[13px] font-medium tracking-tight transition hover:bg-neutral-800"
                 >
-                  이어가기
+                  이 갈래 열기
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
