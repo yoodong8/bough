@@ -383,6 +383,10 @@ export default function App() {
   const [contextMenu, setContextMenu] = useState(null); // {nodeId, x, y}
   const [treeHintVisible, setTreeHintVisible] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  // Top toast shown when a message feedback (👍/👎) is given. No backend —
+  // purely an acknowledgement interaction.
+  const [feedbackThanks, setFeedbackThanks] = useState(false);
+  const feedbackThanksTimer = useRef(null);
   const [dismissedSummary, setDismissedSummary] = useState(null);
   // dismissedSummary = { userMessageCount, nodeStatesRef } | null
   // — invalidated when either the user adds a new message OR nodeStates mutate
@@ -392,6 +396,16 @@ export default function App() {
       setIsTouchDevice(window.matchMedia("(pointer: coarse)").matches);
     }
   }, []);
+
+  // Slide the "thanks" toast down, then retract it after a few seconds.
+  function showFeedbackThanks() {
+    setFeedbackThanks(true);
+    if (feedbackThanksTimer.current) clearTimeout(feedbackThanksTimer.current);
+    feedbackThanksTimer.current = setTimeout(
+      () => setFeedbackThanks(false),
+      2600
+    );
+  }
 
   // Track window width
   useEffect(() => {
@@ -1490,6 +1504,7 @@ export default function App() {
                         isPendingBranchSource={
                           pendingBranchFromId === summaryChild.id
                         }
+                        onFeedbackThanks={showFeedbackThanks}
                       />
                     );
                   }
@@ -1508,6 +1523,7 @@ export default function App() {
                       refCallback={(el) => (messageRefs.current[id] = el)}
                       onBranch={() => startBranch(id)}
                       isPendingBranchSource={pendingBranchFromId === id}
+                      onFeedbackThanks={showFeedbackThanks}
                     />
                     {sidecarEl}
                   </Fragment>
@@ -1717,6 +1733,19 @@ export default function App() {
           onClose={() => setContextMenu(null)}
         />
       )}
+
+      {/* Feedback acknowledgement toast — slides down from the top, retracts. */}
+      <div
+        className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-out ${
+          feedbackThanks
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-20 opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="px-4 py-2 rounded-full bg-neutral-900 text-white text-[13px] font-medium tracking-tight shadow-[0_8px_24px_rgba(0,0,0,0.16)]">
+          피드백을 보내주셔서 감사합니다!
+        </div>
+      </div>
     </div>
   );
 }
@@ -1846,6 +1875,7 @@ function MessageBlock({
   onBranch,
   onSwitchBranch,
   isPendingBranchSource,
+  onFeedbackThanks,
 }) {
   if (message.role === "user") {
     let boxShadow, transition;
@@ -1883,6 +1913,15 @@ function MessageBlock({
   }
 
   const [copied, setCopied] = useState(false);
+  // null | "up" | "down". Selecting one fills it and collapses the other;
+  // re-selecting clears it and restores the other. No backend.
+  const [feedback, setFeedback] = useState(null);
+
+  function handleFeedback(dir) {
+    const activating = feedback !== dir;
+    setFeedback(activating ? dir : null);
+    if (activating) onFeedbackThanks?.();
+  }
 
   return (
     <div
@@ -1945,12 +1984,35 @@ function MessageBlock({
             <Copy className="w-3.5 h-3.5" />
           )}
         </ActionButton>
-        <ActionButton title="좋은 응답">
-          <ThumbsUp className="w-3.5 h-3.5" />
-        </ActionButton>
-        <ActionButton title="별로인 응답">
-          <ThumbsDown className="w-3.5 h-3.5" />
-        </ActionButton>
+        {[
+          { dir: "up", Icon: ThumbsUp, title: "좋은 응답" },
+          { dir: "down", Icon: ThumbsDown, title: "별로인 응답" },
+        ].map(({ dir, Icon, title }) => {
+          const selected = feedback === dir;
+          const collapsed = feedback && feedback !== dir;
+          return (
+            <div
+              key={dir}
+              className="overflow-hidden transition-all duration-300 ease-out"
+              style={{ width: collapsed ? 0 : 28, opacity: collapsed ? 0 : 1 }}
+            >
+              <button
+                onClick={() => handleFeedback(dir)}
+                title={title}
+                className={`w-7 h-7 rounded-md flex items-center justify-center transition ${
+                  selected
+                    ? "text-neutral-900"
+                    : "text-neutral-400 hover:bg-stone-100 hover:text-neutral-700"
+                }`}
+              >
+                <Icon
+                  className="w-3.5 h-3.5"
+                  fill={selected ? "currentColor" : "none"}
+                />
+              </button>
+            </div>
+          );
+        })}
         <ActionButton
           title="브랜치 생성"
           onClick={onBranch}
