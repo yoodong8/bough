@@ -2814,72 +2814,90 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
 
 // On-brand mini illustrations for the onboarding steps. Palette mirrors the
 // tree: #171717 current, #d6d3d1 inactive, #dc2626 marked/red accent.
-// All four share one branch fragment: a trunk node that splits into a straight
-// edge (left leaf) and a curved edge (right leaf). Only the highlight changes.
-const TRUNK = "M54 46 L54 150";
-const CURVE = "M54 46 C 54 100, 156 100, 156 150";
-
+// Steps 1–2 mirror the real tree's exact proportions: node r=5 (r=8 when
+// highlighted), edge stroke 1.5 active / 1.2 inactive, 48px spacing, the
+// +6/−6 node gap, and the C-curve with mid = (parentY + childY) / 2.
 function BranchVisual() {
   // A new branch (red, curved) grows off the trunk beside the existing one.
   return (
-    <svg viewBox="0 0 210 190" className="h-[140px]">
-      <circle cx="54" cy="38" r="6" fill="#525252" />
-      <path d={TRUNK} stroke="#d6d3d1" strokeWidth="1.4" fill="none" />
-      <circle cx="54" cy="158" r="6" fill="#d6d3d1" />
-      <path d={CURVE} stroke="#dc2626" strokeWidth="1.7" fill="none" />
-      <circle cx="156" cy="158" r="6.5" fill="#dc2626" />
-      <circle cx="156" cy="158" r="10.5" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
+    <svg viewBox="0 0 150 104" className="h-[136px]">
+      <circle cx="54" cy="28" r="5" fill="#525252" />
+      <path d="M54 34 L54 70" stroke="#d6d3d1" strokeWidth="1.2" fill="none" />
+      <circle cx="54" cy="76" r="5" fill="#d6d3d1" />
+      <path d="M54 34 C 54 52, 102 52, 102 70" stroke="#dc2626" strokeWidth="1.5" fill="none" />
+      <circle cx="102" cy="76" r="5" fill="#dc2626" />
+      <circle cx="102" cy="76" r="9" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
     </svg>
   );
 }
 
 function NavigateVisual() {
-  // Clicking a node activates its path (black) and marks the current node.
+  // Clicking a node activates its path (black) and highlights the current node.
   return (
-    <svg viewBox="0 0 210 190" className="h-[140px]">
-      <circle cx="54" cy="38" r="6" fill="#525252" />
-      <path d={TRUNK} stroke="#171717" strokeWidth="1.7" fill="none" />
-      <path d={CURVE} stroke="#d6d3d1" strokeWidth="1.4" fill="none" />
-      <circle cx="156" cy="158" r="6" fill="#d6d3d1" />
-      <circle cx="54" cy="158" r="10.5" fill="none" stroke="#171717" strokeOpacity="0.2" strokeWidth="1" />
-      <circle cx="54" cy="158" r="6.5" fill="#171717" />
-      <g transform="translate(62, 164)" fill="#171717">
-        <path d="M0 0 L0 16 L4.2 11.8 L6.8 17 L9 16 L6.4 10.8 L12 10.8 Z" />
+    <svg viewBox="0 0 150 104" className="h-[136px]">
+      <circle cx="54" cy="28" r="5" fill="#525252" />
+      <path d="M54 34 L54 70" stroke="#171717" strokeWidth="1.5" fill="none" />
+      <path d="M54 34 C 54 52, 102 52, 102 70" stroke="#d6d3d1" strokeWidth="1.2" fill="none" />
+      <circle cx="102" cy="76" r="5" fill="#d6d3d1" />
+      <circle cx="54" cy="76" r="12" fill="none" stroke="#171717" strokeOpacity="0.18" strokeWidth="1" />
+      <circle cx="54" cy="76" r="8" fill="#171717" />
+      <g transform="translate(60, 82)" fill="#171717">
+        <path d="M0 0 L0 13 L3.4 9.6 L5.6 14 L7.4 13 L5.2 8.8 L10 8.8 Z" />
       </g>
     </svg>
   );
 }
 
 function CompareVisual() {
-  // Two leaves selected (red) to compare side by side.
   return (
-    <svg viewBox="0 0 210 190" className="h-[140px]">
-      <circle cx="54" cy="38" r="6" fill="#525252" />
-      <path d={TRUNK} stroke="#d6d3d1" strokeWidth="1.4" fill="none" />
-      <path d={CURVE} stroke="#d6d3d1" strokeWidth="1.4" fill="none" />
-      <circle cx="54" cy="158" r="6.5" fill="#dc2626" />
-      <circle cx="54" cy="158" r="10.5" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
-      <circle cx="156" cy="158" r="6.5" fill="#dc2626" />
-      <circle cx="156" cy="158" r="10.5" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
+    <svg viewBox="0 0 240 130" className="w-[240px] h-[130px]">
+      {/* two selected nodes (red ring) */}
+      <circle cx="78" cy="26" r="5" fill="#dc2626" />
+      <circle cx="78" cy="26" r="8.5" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
+      <circle cx="162" cy="26" r="5" fill="#dc2626" />
+      <circle cx="162" cy="26" r="8.5" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
+      {/* two compare cards */}
+      <g>
+        <rect x="40" y="50" width="72" height="62" rx="7" fill="#ffffff" stroke="#e7e5e4" />
+        <line x1="52" y1="66" x2="92" y2="66" stroke="#d6d3d1" strokeWidth="3" strokeLinecap="round" />
+        <line x1="52" y1="78" x2="100" y2="78" stroke="#e7e5e4" strokeWidth="3" strokeLinecap="round" />
+        <line x1="52" y1="90" x2="84" y2="90" stroke="#e7e5e4" strokeWidth="3" strokeLinecap="round" />
+      </g>
+      <g>
+        <rect x="128" y="50" width="72" height="62" rx="7" fill="#ffffff" stroke="#e7e5e4" />
+        <line x1="140" y1="66" x2="180" y2="66" stroke="#d6d3d1" strokeWidth="3" strokeLinecap="round" />
+        <line x1="140" y1="78" x2="188" y2="78" stroke="#e7e5e4" strokeWidth="3" strokeLinecap="round" />
+        <line x1="140" y1="90" x2="172" y2="90" stroke="#e7e5e4" strokeWidth="3" strokeLinecap="round" />
+      </g>
     </svg>
   );
 }
 
 function ConvergeHoldVisual() {
-  // Right leaf converged (apple, red path); left leaf held (eye-off).
   return (
-    <svg viewBox="0 0 210 190" className="h-[140px]">
-      <circle cx="54" cy="38" r="6" fill="#525252" />
-      <path d="M54 46 L54 142" stroke="#d6d3d1" strokeWidth="1.4" fill="none" />
-      <g transform="translate(45, 150)">
-        <EyeOff width={18} height={18} stroke="#a8a29e" strokeWidth={1.5} />
-      </g>
-      <path d="M54 46 C 54 100, 156 100, 156 142" stroke="#dc2626" strokeWidth="1.7" fill="none" />
-      <circle cx="156" cy="158" r="12" fill="#dc2626" fillOpacity="0.1" />
-      <g transform="translate(147, 149)">
-        <AppleIcon size={18} bodyColor="#dc2626" leafColor="#16a34a" strokeWidth={1.5} />
-      </g>
-    </svg>
+    <div className="flex items-center gap-12">
+      <div className="flex flex-col items-center gap-2.5">
+        <div className="w-11 h-11 rounded-full bg-red-600/10 flex items-center justify-center">
+          <AppleIcon
+            size={22}
+            bodyColor="#dc2626"
+            leafColor="#16a34a"
+            strokeWidth={1.5}
+          />
+        </div>
+        <span className="text-[11px] text-neutral-600 font-medium tracking-tight">
+          수렴
+        </span>
+      </div>
+      <div className="flex flex-col items-center gap-2.5">
+        <div className="w-11 h-11 rounded-full bg-stone-200/70 flex items-center justify-center">
+          <EyeOff className="w-[22px] h-[22px]" stroke="#a8a29e" strokeWidth={1.5} />
+        </div>
+        <span className="text-[11px] text-neutral-400 font-medium tracking-tight">
+          보류
+        </span>
+      </div>
+    </div>
   );
 }
 
