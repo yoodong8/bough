@@ -2715,24 +2715,24 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
   const steps = [
     {
       title: "브랜치 생성",
-      desc: "AI 답변 아래 ‘브랜치 생성’ 버튼(가지 아이콘)을 누르면, 그 답변에서 새로운 방향으로 대화를 뻗어 나갈 수 있어요.",
+      desc: "AI 답변의 ‘브랜치 생성’ 버튼을 누르면 그 답변에서 새로운 방향으로 갈래를 뻗어요. 같은 자리에 생긴 갈래들은 < 1 / 2 >로 넘겨 볼 수 있어요.",
       Visual: BranchVisual,
     },
     {
       title: "이동",
-      desc: "트리의 어떤 노드든 클릭하면 그 갈래로 이동해, 해당 대화 흐름을 이어서 볼 수 있어요.",
+      desc: "트리에서 노드를 클릭하면 그 갈래의 대화로 이동해, 흐름을 이어서 볼 수 있어요.",
       Visual: NavigateVisual,
     },
     {
       title: "분할 비교",
-      desc: "‘분할 비교’를 켜고 트리에서 두 점을 선택하면, 두 갈래를 좌우로 나란히 펼쳐 비교할 수 있어요.",
+      desc: "‘분할 비교’를 켜고 트리에서 두 점을 선택하면 두 갈래를 좌우로 나란히 펼쳐 비교할 수 있어요.",
       Visual: CompareVisual,
     },
     {
       title: "수렴 / 보류",
       desc: `갈래 끝 점을 ${
         isTouchDevice ? "길게 눌러" : "우클릭하여"
-      }, 결정한 방향은 ‘수렴(🍎)’으로, 잠시 치워둘 방향은 ‘보류’로 표시할 수 있어요.`,
+      } 정한 방향은 ‘수렴’으로, 잠시 치워둘 방향은 ‘보류’로 표시할 수 있어요.`,
       Visual: ConvergeHoldVisual,
     },
   ];
@@ -2762,10 +2762,10 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
           <div className="rounded-xl bg-stone-50 border border-stone-200/80 mb-4 flex items-center justify-center h-[150px]">
             <Visual />
           </div>
-          <h3 className="text-[16px] font-medium text-neutral-900 tracking-tight mb-1.5">
+          <h3 className="text-[16px] font-medium text-neutral-900 tracking-tight mb-1.5 break-keep">
             {cur.title}
           </h3>
-          <p className="text-[13px] text-neutral-500 leading-relaxed min-h-[40px]">
+          <p className="text-[13px] text-neutral-500 leading-relaxed min-h-[56px] break-keep">
             {cur.desc}
           </p>
         </div>
@@ -2818,33 +2818,55 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
 // highlighted), edge stroke 1.5 active / 1.2 inactive, 48px spacing, the
 // +6/−6 node gap, and the C-curve with mid = (parentY + childY) / 2.
 function BranchVisual() {
-  // A new branch (red, curved) grows off the trunk beside the existing one.
+  // A new branch (black, curved) grows off the trunk, plus the sibling switcher.
   return (
-    <svg viewBox="0 0 150 104" className="h-[136px]">
-      <circle cx="54" cy="28" r="5" fill="#525252" />
-      <path d="M54 34 L54 70" stroke="#d6d3d1" strokeWidth="1.2" fill="none" />
-      <circle cx="54" cy="76" r="5" fill="#d6d3d1" />
-      <path d="M54 34 C 54 52, 102 52, 102 70" stroke="#dc2626" strokeWidth="1.5" fill="none" />
-      <circle cx="102" cy="76" r="5" fill="#dc2626" />
-      <circle cx="102" cy="76" r="9" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
-    </svg>
+    <div className="flex flex-col items-center gap-3.5">
+      <svg viewBox="0 0 150 92" className="h-[92px]">
+        <circle cx="54" cy="22" r="5" fill="#525252" />
+        <path d="M54 28 L54 64" stroke="#d6d3d1" strokeWidth="1.2" fill="none" />
+        <circle cx="54" cy="70" r="5" fill="#d6d3d1" />
+        <path d="M54 28 C 54 46, 102 46, 102 64" stroke="#171717" strokeWidth="1.5" fill="none" />
+        <circle cx="102" cy="70" r="9" fill="none" stroke="#171717" strokeOpacity="0.18" strokeWidth="1" />
+        <circle cx="102" cy="70" r="5" fill="#171717" />
+      </svg>
+      <div className="flex items-center gap-0.5 px-2.5 py-1 rounded-md bg-white border border-neutral-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        <ChevronLeft className="w-3.5 h-3.5 text-neutral-500" />
+        <span className="font-mono-ui font-medium px-1.5 tabular-nums tracking-tight text-[11px]">
+          <span className="text-red-600">2</span>
+          <span className="text-neutral-300 mx-0.5">/</span>
+          <span className="text-neutral-500">2</span>
+        </span>
+        <ChevronRight className="w-3.5 h-3.5 text-neutral-500" />
+      </div>
+    </div>
   );
 }
 
 function NavigateVisual() {
-  // Clicking a node activates its path (black) and highlights the current node.
+  // Clicking a node moves to that branch — shown landing in a conversation.
   return (
-    <svg viewBox="0 0 150 104" className="h-[136px]">
-      <circle cx="54" cy="28" r="5" fill="#525252" />
-      <path d="M54 34 L54 70" stroke="#171717" strokeWidth="1.5" fill="none" />
-      <path d="M54 34 C 54 52, 102 52, 102 70" stroke="#d6d3d1" strokeWidth="1.2" fill="none" />
-      <circle cx="102" cy="76" r="5" fill="#d6d3d1" />
-      <circle cx="54" cy="76" r="12" fill="none" stroke="#171717" strokeOpacity="0.18" strokeWidth="1" />
-      <circle cx="54" cy="76" r="8" fill="#171717" />
-      <g transform="translate(60, 82)" fill="#171717">
-        <path d="M0 0 L0 13 L3.4 9.6 L5.6 14 L7.4 13 L5.2 8.8 L10 8.8 Z" />
-      </g>
-    </svg>
+    <div className="flex items-center gap-5">
+      <svg viewBox="0 0 96 104" className="h-[104px]">
+        <circle cx="40" cy="28" r="5" fill="#525252" />
+        <path d="M40 34 L40 70" stroke="#171717" strokeWidth="1.5" fill="none" />
+        <path d="M40 34 C 40 52, 82 52, 82 70" stroke="#d6d3d1" strokeWidth="1.2" fill="none" />
+        <circle cx="82" cy="76" r="5" fill="#d6d3d1" />
+        <circle cx="40" cy="76" r="12" fill="none" stroke="#171717" strokeOpacity="0.18" strokeWidth="1" />
+        <circle cx="40" cy="76" r="8" fill="#171717" />
+        <g transform="translate(46, 82)" fill="#171717">
+          <path d="M0 0 L0 13 L3.4 9.6 L5.6 14 L7.4 13 L5.2 8.8 L10 8.8 Z" />
+        </g>
+      </svg>
+      <div className="flex flex-col gap-2 w-[116px]">
+        <div className="self-end px-2.5 py-2 rounded-xl rounded-br-sm bg-stone-100 border border-stone-200">
+          <div className="h-1.5 w-12 rounded-full bg-neutral-300" />
+        </div>
+        <div className="self-start w-full px-2.5 py-2 rounded-xl rounded-bl-sm bg-white border border-neutral-200 space-y-1.5">
+          <div className="h-1.5 w-16 rounded-full bg-neutral-200" />
+          <div className="h-1.5 w-11 rounded-full bg-neutral-200" />
+        </div>
+      </div>
+    </div>
   );
 }
 
