@@ -1329,25 +1329,25 @@ export default function App() {
         .compare-card-in {
           animation: compare-card-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
-        /* Onboarding step transitions — directional slide + fade. */
+        /* Onboarding step transitions — slow directional glide + fade. */
         @keyframes guide-step-next {
-          from { opacity: 0; transform: translateX(18px); }
+          from { opacity: 0; transform: translateX(26px); }
           to   { opacity: 1; transform: translateX(0); }
         }
         @keyframes guide-step-prev {
-          from { opacity: 0; transform: translateX(-18px); }
+          from { opacity: 0; transform: translateX(-26px); }
           to   { opacity: 1; transform: translateX(0); }
         }
         .guide-step-next {
-          animation: guide-step-next 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: guide-step-next 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         .guide-step-prev {
-          animation: guide-step-prev 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: guide-step-prev 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        /* First-run help button pulse — color drifts to red and back. */
+        /* First-run help button pulse — color and border drift to red and back. */
         @keyframes help-pulse {
-          0%, 100% { color: #525252; }
-          50%      { color: #dc2626; }
+          0%, 100% { color: #525252; border-color: #e5e5e5; }
+          50%      { color: #dc2626; border-color: #dc2626; }
         }
         .help-pulse {
           animation: help-pulse 1.8s ease-in-out infinite;
