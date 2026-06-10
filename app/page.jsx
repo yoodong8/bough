@@ -28,6 +28,7 @@ import {
   ListChecks,
   EyeOff,
   Wrench,
+  HelpCircle,
 } from "lucide-react";
 
 // ============================================================
@@ -384,7 +385,6 @@ export default function App() {
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
   const [contextMenu, setContextMenu] = useState(null); // {nodeId, x, y}
-  const [treeHintVisible, setTreeHintVisible] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   // Top toast shown when a message feedback (👍/👎) is given. No backend —
   // purely an acknowledgement interaction.
@@ -1687,8 +1687,6 @@ export default function App() {
               setContextMenu({ nodeId, x, y });
               showLabelBriefly(nodeId);
             }}
-            hintVisible={treeHintVisible}
-            onCloseHint={() => setTreeHintVisible(false)}
             isTouchDevice={isTouchDevice}
             treeWidth={treeWidth}
             setTreeWidth={setTreeWidth}
@@ -1762,8 +1760,6 @@ export default function App() {
               setContextMenu({ nodeId, x, y });
               showLabelBriefly(nodeId);
             }}
-            hintVisible={treeHintVisible}
-            onCloseHint={() => setTreeHintVisible(false)}
             isTouchDevice={isTouchDevice}
             treeWidth={treeWidth}
             setTreeWidth={setTreeWidth}
@@ -2265,8 +2261,6 @@ function TreePanel({
   convergedPathSet,
   isLeafFn,
   onContextMenu,
-  hintVisible,
-  onCloseHint,
   isTouchDevice,
   treeWidth,
   setTreeWidth,
@@ -2276,6 +2270,7 @@ function TreePanel({
   const MIN_W = 260;
   const MAX_W = 520;
   const panelWidth = treeWidth;
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const startResize = (e) => {
     if (e.button !== 0) return;
@@ -2685,32 +2680,71 @@ function TreePanel({
           })()}
       </div>
 
-      {/* Hint — fixed to the bottom of the panel regardless of scroll */}
-      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-10">
-        <div
-          className={`mx-3 mb-6 px-3 pt-2 pb-2.5 rounded-md bg-stone-50 border border-stone-200 pointer-events-auto transition-all duration-300 ${
-            hintVisible
-              ? "translate-y-0 opacity-100"
-              : "translate-y-full opacity-0 pointer-events-none"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
-              Tip
-            </span>
-            <button
-              onClick={onCloseHint}
-              className="-mr-1 p-1 text-neutral-400 hover:text-neutral-700 transition"
-              title="안내 닫기"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+      {/* Help — opens the centered guide on demand */}
+      <button
+        onClick={() => setGuideOpen(true)}
+        title="사용 안내"
+        className="absolute bottom-0 right-0 m-3 z-10 w-7 h-7 rounded-full bg-white border border-neutral-200 text-neutral-400 hover:text-neutral-700 hover:border-neutral-300 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center justify-center transition active:scale-[0.96]"
+      >
+        <HelpCircle className="w-4 h-4" />
+      </button>
+
+      {guideOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-neutral-900/30"
+            onClick={() => setGuideOpen(false)}
+          />
+          <div className="relative w-full max-w-md max-h-[80vh] overflow-y-auto bg-white rounded-2xl border border-neutral-200 shadow-[0_12px_40px_rgba(0,0,0,0.16)] p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[15px] font-medium text-neutral-900 tracking-tight">
+                Bough 사용 안내
+              </h3>
+              <button
+                onClick={() => setGuideOpen(false)}
+                title="닫기"
+                className="-mr-1 p-1 text-neutral-400 hover:text-neutral-700 transition active:scale-[0.96]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {[
+                {
+                  t: "갈래치기",
+                  d: "AI 답변 아래 ‘갈래치기’ 버튼을 누르면 그 답변에서 새 방향으로 대화를 이어갈 수 있어요.",
+                },
+                {
+                  t: "이동",
+                  d: "트리의 노드를 클릭하면 그 갈래로 이동합니다.",
+                },
+                {
+                  t: "분할 비교",
+                  d: "‘분할 비교’를 켜고 트리에서 두 점을 선택하면 두 갈래를 나란히 비교해요.",
+                },
+                {
+                  t: "수렴 / 보류",
+                  d: `갈래 끝 점을 ${
+                    isTouchDevice ? "길게 눌러" : "우클릭하여"
+                  } 수렴(결정)하거나 보류(치워두기)로 표시할 수 있어요.`,
+                },
+              ].map(({ t, d }) => (
+                <div key={t} className="flex gap-3">
+                  <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-red-600 shrink-0" />
+                  <div>
+                    <div className="text-[13px] font-medium text-neutral-900 mb-0.5">
+                      {t}
+                    </div>
+                    <p className="text-[12px] text-neutral-500 leading-relaxed">
+                      {d}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="text-[11px] text-neutral-500">
-            갈래 끝 점을 {isTouchDevice ? "길게 눌러" : "우클릭 하여"} 보류·수렴 표시
-          </p>
         </div>
-      </div>
+      )}
     </div>
   );
 }
