@@ -977,9 +977,25 @@ export default function App() {
 
     setIsLoading(true);
     try {
-      // TODO: API 연동 후 아래 더미 텍스트를 callLLM 호출로 교체
-      const summaryText =
-        "캔들 오브제 브랜드의 컨셉 방향을 논의한 결과, '어른의 생일'이 지닌 양가감정—축하받아야 한다는 압박과 관계 피로감—을 출발점으로 삼아, 외부 시선에서 벗어나 자신만의 시간을 만드는 '작은 멈춤'으로 수렴했습니다. 브랜드 네임은 시간·장소를 은유하는 방향으로 '무렵'을 선택하였으며, 늦오후·창가·문턱 등 하루의 결을 시리즈로 확장하는 구조를 기본 라인업으로 정했습니다.";
+      const summaryText = (
+        await callLLM(
+          [
+            ...ctx.map((m) => ({ role: m.role, content: m.content })),
+            {
+              role: "user",
+              content:
+                "지금까지의 이 갈래 대화를 3~5줄로 정리해 주세요. 어떤 맥락에서 무엇을 논의했고 어떤 방향으로 수렴했는지 핵심만 담아, 군더더기 없이 자연스러운 문장으로 작성하세요. 제목·머리말·목록·인사말 없이 정리 본문만 출력하세요.",
+            },
+          ],
+          {
+            maxTokens: 400,
+            system:
+              "당신은 분기형 대화의 한 갈래를 간결하게 정리하는 어시스턴트입니다. 해당 갈래에서 다룬 핵심 맥락과 도달한 결론을 3~5줄로 요약합니다. 새로운 내용을 지어내지 말고 대화에 실제로 나온 내용만 사용하세요.",
+          }
+        )
+      ).trim();
+
+      if (!summaryText) throw new Error("빈 응답");
 
       const summaryId = nid();
       const summaryMsg = {

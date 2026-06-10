@@ -17,6 +17,13 @@ export async function POST(req) {
     return new Response(JSON.stringify({ error: "messages required" }), { status: 400 });
   }
 
+  const system =
+    typeof body?.system === "string" && body.system.trim()
+      ? body.system
+      : SYSTEM_PROMPT;
+  const maxOutputTokens =
+    Number(body?.maxTokens) > 0 ? Number(body.maxTokens) : 800;
+
   const contents = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
@@ -29,9 +36,9 @@ export async function POST(req) {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          system_instruction: { parts: [{ text: system }] },
           contents,
-          generationConfig: { maxOutputTokens: 800 },
+          generationConfig: { maxOutputTokens },
         }),
       }
     );
