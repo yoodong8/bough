@@ -1627,7 +1627,7 @@ export default function App() {
         {/* Composer */}
         {(!compareMode || compareNodes.length < 2) && (
           <div
-            className="px-6 lg:px-12 pb-6 pt-5 shrink-0"
+            className="px-6 lg:px-12 pb-2 lg:pb-6 pt-5 shrink-0"
             onWheel={(e) => {
               if (chatScrollRef.current) {
                 chatScrollRef.current.scrollTop += e.deltaY;
