@@ -2376,7 +2376,7 @@ function TreePanel({
         compareCount={compareNodes.length}
         onHide={onHide}
       />
-      <div className="flex-1 overflow-auto px-3 pb-3 pt-10 relative select-none">
+      <div className="flex-1 overflow-auto px-3 pb-3 pt-8 relative select-none">
         <svg
           width={width}
           height={height}
