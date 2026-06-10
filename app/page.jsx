@@ -1329,13 +1329,28 @@ export default function App() {
         .compare-card-in {
           animation: compare-card-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
-        /* Onboarding step crossfade-slide on next/prev. */
-        @keyframes guide-step-in {
-          from { opacity: 0; transform: translateX(10px); }
+        /* Onboarding step transitions — directional slide + fade. */
+        @keyframes guide-step-next {
+          from { opacity: 0; transform: translateX(18px); }
           to   { opacity: 1; transform: translateX(0); }
         }
-        .guide-step-in {
-          animation: guide-step-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        @keyframes guide-step-prev {
+          from { opacity: 0; transform: translateX(-18px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        .guide-step-next {
+          animation: guide-step-next 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .guide-step-prev {
+          animation: guide-step-prev 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        /* First-run help button pulse — color drifts to red and back. */
+        @keyframes help-pulse {
+          0%, 100% { color: #525252; }
+          50%      { color: #dc2626; }
+        }
+        .help-pulse {
+          animation: help-pulse 1.8s ease-in-out infinite;
         }
         @keyframes pop-glow {
           from { transform: scale(0); opacity: 0; }
@@ -2278,6 +2293,20 @@ function TreePanel({
   const MAX_W = 520;
   const panelWidth = treeWidth;
   const [guideOpen, setGuideOpen] = useState(false);
+  // The help button pulses red until the guide has been opened once (persisted).
+  const [guideSeen, setGuideSeen] = useState(true);
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("bough.guideSeen")) setGuideSeen(false);
+    } catch {}
+  }, []);
+  function openGuide() {
+    setGuideOpen(true);
+    setGuideSeen(true);
+    try {
+      localStorage.setItem("bough.guideSeen", "1");
+    } catch {}
+  }
 
   const startResize = (e) => {
     if (e.button !== 0) return;
@@ -2689,9 +2718,13 @@ function TreePanel({
 
       {/* Help — opens the centered guide on demand */}
       <button
-        onClick={() => setGuideOpen(true)}
+        onClick={openGuide}
         title="사용 안내"
-        className="absolute bottom-4 right-4 z-10 w-9 h-9 rounded-full bg-white border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-300 shadow-[0_2px_8px_rgba(0,0,0,0.08)] flex items-center justify-center transition active:scale-[0.96]"
+        className={`absolute bottom-6 right-6 z-10 w-9 h-9 rounded-full bg-white border border-neutral-200 hover:border-neutral-300 flex items-center justify-center transition active:scale-[0.96] ${
+          guideSeen
+            ? "text-neutral-500 hover:text-neutral-900"
+            : "help-pulse"
+        }`}
       >
         <span className="text-[16px] font-semibold leading-none">?</span>
       </button>
@@ -2711,11 +2744,16 @@ function TreePanel({
 // ============================================================
 function OnboardingGuide({ onClose, isTouchDevice }) {
   const [step, setStep] = useState(0);
+  const [dir, setDir] = useState(1);
+  const go = (d) => {
+    setDir(d);
+    setStep((s) => s + d);
+  };
 
   const steps = [
     {
       title: "브랜치 생성",
-      desc: "AI 답변의 ‘브랜치 생성’ 버튼을 누르면 그 답변에서 새로운 방향으로 갈래를 뻗어요. 같은 자리에 생긴 갈래들은 < 1 / 2 >로 넘겨 볼 수 있어요.",
+      desc: "AI 답변 아래의 ‘브랜치 생성’ 버튼을 누르면, 그 답변에서 새로운 방향으로 갈래를 뻗어 나갈 수 있어요.",
       Visual: BranchVisual,
     },
     {
@@ -2758,7 +2796,10 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
           </button>
         </div>
 
-        <div key={step} className="guide-step-in">
+        <div
+          key={step}
+          className={dir > 0 ? "guide-step-next" : "guide-step-prev"}
+        >
           <div className="rounded-xl bg-stone-50 border border-stone-200/80 mb-4 flex items-center justify-center h-[150px]">
             <Visual />
           </div>
@@ -2784,7 +2825,7 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
           <div className="flex items-center gap-2">
             {step > 0 && (
               <button
-                onClick={() => setStep((s) => s - 1)}
+                onClick={() => go(-1)}
                 className="px-3 h-9 rounded-md text-[13px] font-medium text-neutral-600 hover:bg-stone-100 transition active:scale-[0.96]"
               >
                 이전
@@ -2792,7 +2833,7 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
             )}
             {step < last ? (
               <button
-                onClick={() => setStep((s) => s + 1)}
+                onClick={() => go(1)}
                 className="px-3 h-9 rounded-md text-[13px] font-medium bg-neutral-900 text-white hover:bg-neutral-800 transition active:scale-[0.96]"
               >
                 다음
@@ -2818,25 +2859,23 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
 // highlighted), edge stroke 1.5 active / 1.2 inactive, 48px spacing, the
 // +6/−6 node gap, and the C-curve with mid = (parentY + childY) / 2.
 function BranchVisual() {
-  // A new branch (black, curved) grows off the trunk, plus the sibling switcher.
+  // An AI answer with the branch-create button highlighted beneath it.
   return (
-    <div className="flex flex-col items-center gap-3.5">
-      <svg viewBox="0 0 150 92" className="h-[92px]">
-        <circle cx="54" cy="22" r="5" fill="#525252" />
-        <path d="M54 28 L54 64" stroke="#d6d3d1" strokeWidth="1.2" fill="none" />
-        <circle cx="54" cy="70" r="5" fill="#d6d3d1" />
-        <path d="M54 28 C 54 46, 102 46, 102 64" stroke="#171717" strokeWidth="1.5" fill="none" />
-        <circle cx="102" cy="70" r="9" fill="none" stroke="#171717" strokeOpacity="0.18" strokeWidth="1" />
-        <circle cx="102" cy="70" r="5" fill="#171717" />
-      </svg>
-      <div className="flex items-center gap-0.5 px-2.5 py-1 rounded-md bg-white border border-neutral-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-        <ChevronLeft className="w-3.5 h-3.5 text-neutral-500" />
-        <span className="font-mono-ui font-medium px-1.5 tabular-nums tracking-tight text-[11px]">
-          <span className="text-red-600">2</span>
-          <span className="text-neutral-300 mx-0.5">/</span>
-          <span className="text-neutral-500">2</span>
+    <div className="flex flex-col items-start gap-2.5 w-[208px]">
+      <div className="w-full px-3 py-2.5 rounded-xl rounded-bl-sm bg-white border border-neutral-200 space-y-1.5">
+        <div className="h-1.5 w-full rounded-full bg-neutral-200" />
+        <div className="h-1.5 w-4/5 rounded-full bg-neutral-200" />
+      </div>
+      <div className="flex items-center gap-1 pl-0.5">
+        <span className="w-6 h-6 rounded-md flex items-center justify-center text-neutral-300">
+          <Copy className="w-3.5 h-3.5" />
         </span>
-        <ChevronRight className="w-3.5 h-3.5 text-neutral-500" />
+        <span className="w-6 h-6 rounded-md flex items-center justify-center text-neutral-300">
+          <ThumbsUp className="w-3.5 h-3.5" />
+        </span>
+        <span className="w-7 h-7 rounded-md flex items-center justify-center text-red-600 bg-red-50 ring-1 ring-red-200">
+          <Split className="w-4 h-4 rotate-180" />
+        </span>
       </div>
     </div>
   );
