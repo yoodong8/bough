@@ -366,6 +366,9 @@ export default function App() {
     () => conversations[0].id
   );
   const [pendingBranchFromId, setPendingBranchFromId] = useState(null);
+  // AI message id awaiting confirmation to branch off a converged thread
+  // (branching there would reopen the resolved path → cancels convergence).
+  const [branchWarnFor, setBranchWarnFor] = useState(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
@@ -884,6 +887,36 @@ export default function App() {
     setCompareMode(false);
     setCompareNodes([]);
     setTimeout(() => inputRef.current?.focus(), 30);
+  }
+
+  // True when aiMsgId sits on the resolved path (root → converged leaf), so
+  // branching there would fork the converged thread.
+  function isOnConvergedPath(aiMsgId) {
+    if (!convergedLeafId) return false;
+    let cur = convergedLeafId;
+    while (cur) {
+      if (cur === aiMsgId) return true;
+      cur = activeConv.messages[cur]?.parentId;
+    }
+    return false;
+  }
+
+  // Entry point for the branch button: warn before forking a converged thread,
+  // otherwise branch straight away.
+  function requestBranch(aiMsgId) {
+    if (isOnConvergedPath(aiMsgId)) {
+      setBranchWarnFor(aiMsgId);
+    } else {
+      startBranch(aiMsgId);
+    }
+  }
+
+  // User confirmed: drop the convergence (apple → normal node) and branch.
+  function confirmBranchCancelConverge() {
+    if (convergedLeafId) setNodeState(convergedLeafId, null);
+    const target = branchWarnFor;
+    setBranchWarnFor(null);
+    if (target) startBranch(target);
   }
 
   function cancelBranch() {
@@ -1515,7 +1548,7 @@ export default function App() {
                         isConvergedGlow={false}
                         extraTop={false}
                         refCallback={() => {}}
-                        onBranch={() => startBranch(summaryChild.id)}
+                        onBranch={() => requestBranch(summaryChild.id)}
                         isPendingBranchSource={
                           pendingBranchFromId === summaryChild.id
                         }
@@ -1536,7 +1569,7 @@ export default function App() {
                       isConvergedGlow={isConvergedGlow}
                       extraTop={extraTop}
                       refCallback={(el) => (messageRefs.current[id] = el)}
-                      onBranch={() => startBranch(id)}
+                      onBranch={() => requestBranch(id)}
                       isPendingBranchSource={pendingBranchFromId === id}
                       onFeedbackThanks={showFeedbackThanks}
                     />
@@ -1761,6 +1794,43 @@ export default function App() {
           피드백을 보내주셔서 감사합니다!
         </div>
       </div>
+
+      {/* Warn before branching off a converged thread — confirming drops the
+          convergence (apple → normal node). */}
+      {branchWarnFor && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-neutral-900/30"
+            onClick={() => setBranchWarnFor(null)}
+          />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl border border-neutral-200 shadow-[0_12px_40px_rgba(0,0,0,0.16)] p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+              <h3 className="text-[15px] font-medium text-neutral-900 tracking-tight">
+                수렴된 갈래입니다
+              </h3>
+            </div>
+            <p className="text-[13px] text-neutral-600 leading-relaxed mb-5">
+              이 갈래에는 수렴으로 표시된 답이 있어요. 여기서 분기하면 수렴이
+              취소되고 사과 표시가 사라집니다. 계속할까요?
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setBranchWarnFor(null)}
+                className="px-3 h-9 rounded-md text-[13px] font-medium text-neutral-600 hover:bg-stone-100 transition active:scale-[0.96]"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmBranchCancelConverge}
+                className="px-3 h-9 rounded-md text-[13px] font-medium bg-neutral-900 text-white hover:bg-neutral-800 transition active:scale-[0.96]"
+              >
+                수렴 취소하고 분기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
