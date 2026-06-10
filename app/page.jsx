@@ -1270,12 +1270,15 @@ export default function App() {
           stroke-dasharray: 100;
           animation: draw-edge 360ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
         }
-        @keyframes pop-node {
-          from { transform: scale(0); }
-          to   { transform: scale(1); }
+        /* New node springs out FROM the parent's direction (--sx/--sy point
+           back toward the parent) and overshoots into place — a limb whipping
+           out as the edge finishes drawing. */
+        @keyframes spring-node {
+          from { transform: translate(var(--sx, 0px), var(--sy, 0px)) scale(0.4); }
+          to   { transform: translate(0px, 0px) scale(1); }
         }
         .tree-node-new {
-          animation: pop-node 460ms cubic-bezier(0.34, 1.56, 0.64, 1) 280ms both;
+          animation: spring-node 460ms cubic-bezier(0.34, 1.56, 0.64, 1) 280ms both;
         }
         @keyframes pop-icon {
           from { transform: scale(0); }
@@ -1283,6 +1286,18 @@ export default function App() {
         }
         .icon-pop {
           animation: pop-icon 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        /* Converge: the apple arrives, then squashes on landing (volume-
+           preserving) before settling — weight of a decision touching down. */
+        @keyframes pop-land {
+          0%   { transform: scale(0); }
+          50%  { transform: scale(1.08, 1.08); }
+          66%  { transform: scale(1.12, 0.88); }
+          82%  { transform: scale(0.97, 1.05); }
+          100% { transform: scale(1, 1); }
+        }
+        .icon-land {
+          animation: pop-land 520ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
         }
         @keyframes pop-glow {
           from { transform: scale(0); opacity: 0; }
@@ -1993,13 +2008,13 @@ function MessageBlock({
           return (
             <div
               key={dir}
-              className="overflow-hidden transition-all duration-300 ease-out"
+              className="overflow-hidden transition-[width,opacity] duration-300 ease-out"
               style={{ width: collapsed ? 0 : 28, opacity: collapsed ? 0 : 1 }}
             >
               <button
                 onClick={() => handleFeedback(dir)}
                 title={title}
-                className={`w-7 h-7 rounded-md flex items-center justify-center transition ${
+                className={`w-7 h-7 rounded-md flex items-center justify-center transition active:scale-[0.96] ${
                   selected
                     ? "text-neutral-500"
                     : "text-neutral-400 hover:bg-stone-100 hover:text-neutral-700"
@@ -2049,7 +2064,7 @@ function ActionButton({ children, title, onClick, highlighted, hoverAccent }) {
         onClick={onClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setHovered(false)}
-        className={`w-7 h-7 rounded-md flex items-center justify-center transition ${
+        className={`w-7 h-7 rounded-md flex items-center justify-center transition active:scale-[0.96] ${
           highlighted
             ? "bg-red-50 text-red-600 ring-1 ring-red-200"
             : hoverAccent
@@ -2135,7 +2150,7 @@ const Composer = forwardRef(function Composer(
           <button
             onClick={isTouchDevice ? undefined : onSend}
             disabled={isTouchDevice ? false : disabled || !value.trim()}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-500 hover:bg-stone-100 hover:text-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-500 hover:bg-stone-100 hover:text-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition active:scale-[0.96]"
             title={isTouchDevice ? "음성 입력" : "보내기 (Enter)"}
           >
             <Mic className="w-4 h-4" />
@@ -2144,7 +2159,7 @@ const Composer = forwardRef(function Composer(
             <button
               onClick={onSend}
               disabled={disabled || !value.trim()}
-              className="w-8 h-8 rounded-md flex items-center justify-center bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-stone-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition"
+              className="w-8 h-8 rounded-md flex items-center justify-center bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-stone-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition active:scale-[0.96]"
               title="보내기"
             >
               <ArrowUp className="w-4 h-4" />
@@ -2452,13 +2467,31 @@ function TreePanel({
 
             const isNewNode = newNodeIds && newNodeIds.has(m.id);
 
+            // Spring origin: offset back toward the parent so the node whips
+            // out along the branch direction instead of popping in place.
+            let springX = 0;
+            let springY = 0;
+            if (isNewNode) {
+              const aiPar = m.parentId ? messages[m.parentId] : null;
+              const ppId = aiPar ? aiPar.parentId : null;
+              const pp = ppId ? pos(ppId) : null;
+              if (pp) {
+                springX = (pp.x - p.x) * 0.3;
+                springY = (pp.y - p.y) * 0.3;
+              }
+            }
+
             return (
               <g
                 key={`n-${m.id}`}
                 className={isNewNode ? "tree-node-new" : undefined}
                 style={
                   isNewNode
-                    ? { transformOrigin: `${p.x}px ${p.y}px` }
+                    ? {
+                        transformOrigin: `${p.x}px ${p.y}px`,
+                        "--sx": `${springX}px`,
+                        "--sy": `${springY}px`,
+                      }
                     : undefined
                 }
               >
@@ -2518,7 +2551,7 @@ function TreePanel({
                       className="pointer-events-none transition-all duration-200"
                     >
                       <g
-                        className={popping ? "icon-pop" : undefined}
+                        className={popping ? "icon-land" : undefined}
                         style={
                           popping
                             ? { transformOrigin: `${size / 2}px ${size / 2}px` }
@@ -2865,7 +2898,7 @@ function CompareView({
                 {isJunction ? (
                   <button
                     onClick={() => onCompareForks?.(subTips)}
-                    className="flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight text-neutral-600 ring-1 ring-neutral-200 transition hover:bg-stone-100 hover:text-neutral-900"
+                    className="flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight text-neutral-600 ring-1 ring-neutral-200 transition active:scale-[0.96] hover:bg-stone-100 hover:text-neutral-900"
                   >
                     <Split className="w-3.5 h-3.5" />
                     다음 갈래 비교하기
@@ -2894,7 +2927,7 @@ function CompareView({
                           onClick={() =>
                             onSetNodeState?.(tipId, isCurrent ? null : key)
                           }
-                          className={`flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight transition ${
+                          className={`flex items-center gap-1.5 px-2.5 h-8 rounded-md text-[13px] font-medium tracking-tight transition active:scale-[0.96] ${
                             isCurrent
                               ? isConvergedItem
                                 ? "bg-red-50 text-red-600 ring-1 ring-red-200"
@@ -2912,7 +2945,7 @@ function CompareView({
                 <span className="flex-1" />
                 <button
                   onClick={() => onOpenBranch?.(tipId)}
-                  className="flex items-center gap-1 pl-3 pr-2.5 h-8 rounded-md bg-neutral-900 text-white text-[13px] font-medium tracking-tight transition hover:bg-neutral-800"
+                  className="flex items-center gap-1 pl-3 pr-2.5 h-8 rounded-md bg-neutral-900 text-white text-[13px] font-medium tracking-tight transition active:scale-[0.96] hover:bg-neutral-800"
                 >
                   이 갈래 열기
                   <ArrowRight className="w-3.5 h-3.5" />
