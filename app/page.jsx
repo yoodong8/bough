@@ -1581,7 +1581,7 @@ export default function App() {
         )}
 
         {/* Composer */}
-        {!compareMode && (
+        {(!compareMode || compareNodes.length < 2) && (
           <div
             className="px-6 lg:px-12 pb-6 pt-5 shrink-0"
             onWheel={(e) => {
@@ -1634,14 +1634,20 @@ export default function App() {
                   <div className="mt-1">보류된 갈래입니다.</div>
                 </div>
               ) : (
-                <Composer
-                  ref={inputRef}
-                  value={input}
-                  onChange={setInput}
-                  onSend={handleSend}
-                  disabled={isLoading}
-                  isTouchDevice={isTouchDevice}
-                />
+                <div
+                  className={
+                    compareMode ? "opacity-50 pointer-events-none" : ""
+                  }
+                >
+                  <Composer
+                    ref={inputRef}
+                    value={input}
+                    onChange={setInput}
+                    onSend={handleSend}
+                    disabled={isLoading || compareMode}
+                    isTouchDevice={isTouchDevice}
+                  />
+                </div>
               )}
             </div>
           </div>
