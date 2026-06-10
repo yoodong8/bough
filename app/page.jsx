@@ -1346,14 +1346,6 @@ export default function App() {
         .guide-step-prev {
           animation: guide-step-prev 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
-        /* Modal card spring-in on open. */
-        @keyframes guide-pop {
-          from { opacity: 0; transform: scale(0.93); }
-          to   { opacity: 1; transform: scale(1); }
-        }
-        .guide-pop {
-          animation: guide-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-        }
         /* First-run help button pulse — color and border drift to red and back. */
         @keyframes help-pulse {
           0%, 100% { color: #525252; border-color: #e5e5e5; }
@@ -2307,14 +2299,14 @@ function TreePanel({
   const [guideSeen, setGuideSeen] = useState(true);
   useEffect(() => {
     try {
-      if (!localStorage.getItem("bough.guideSeen")) setGuideSeen(false);
+      if (!localStorage.getItem("bough.guideSeen.v2")) setGuideSeen(false);
     } catch {}
   }, []);
   function openGuide() {
     setGuideOpen(true);
     setGuideSeen(true);
     try {
-      localStorage.setItem("bough.guideSeen", "1");
+      localStorage.setItem("bough.guideSeen.v2", "1");
     } catch {}
   }
 
@@ -2755,6 +2747,15 @@ function TreePanel({
 function OnboardingGuide({ onClose, isTouchDevice }) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setOpen(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const close = () => {
+    setOpen(false);
+    setTimeout(onClose, 220);
+  };
   const go = (d) => {
     setDir(d);
     setStep((s) => s + d);
@@ -2791,14 +2792,25 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-neutral-900/30" onClick={onClose} />
-      <div className="guide-pop relative w-full max-w-md bg-white rounded-2xl border border-neutral-200 shadow-[0_12px_40px_rgba(0,0,0,0.16)] p-6">
+      <div
+        onClick={close}
+        className={`absolute inset-0 bg-neutral-900/30 transition-opacity duration-200 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <div
+        className={`relative w-full max-w-md bg-white rounded-2xl border border-neutral-200 shadow-[0_12px_40px_rgba(0,0,0,0.16)] p-6 transition-[opacity,transform] ${
+          open
+            ? "opacity-100 scale-100 duration-[440ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            : "opacity-0 scale-95 duration-200 ease-in"
+        }`}
+      >
         <div className="flex items-center justify-between mb-4">
           <span className="text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
             Guide · {step + 1}/{steps.length}
           </span>
           <button
-            onClick={onClose}
+            onClick={close}
             title="닫기"
             className="-mr-1 p-1 text-neutral-400 hover:text-neutral-700 transition active:scale-[0.96]"
           >
@@ -2850,7 +2862,7 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
               </button>
             ) : (
               <button
-                onClick={onClose}
+                onClick={close}
                 className="px-3 h-9 rounded-md text-[13px] font-medium bg-neutral-900 text-white hover:bg-neutral-800 transition active:scale-[0.96]"
               >
                 시작하기
