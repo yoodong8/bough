@@ -38,7 +38,13 @@ export async function POST(req) {
         body: JSON.stringify({
           system_instruction: { parts: [{ text: system }] },
           contents,
-          generationConfig: { maxOutputTokens },
+          generationConfig: {
+            maxOutputTokens,
+            // Gemini 2.5 Flash spends output tokens on "thinking" by default,
+            // which can swallow the whole budget and truncate the visible
+            // text. Disable it so tokens go to the answer.
+            thinkingConfig: { thinkingBudget: 0 },
+          },
         }),
       }
     );
