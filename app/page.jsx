@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, forwardRef, Fragment } from "react";
+import { createPortal } from "react-dom";
 import {
   Plus,
   ChevronDown,
@@ -1329,20 +1330,29 @@ export default function App() {
         .compare-card-in {
           animation: compare-card-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
-        /* Onboarding step transitions — slow directional glide + fade. */
+        /* Onboarding step transitions — slow, springy directional glide that
+           eases in, overshoots, and settles (slow in & slow out). */
         @keyframes guide-step-next {
-          from { opacity: 0; transform: translateX(26px); }
-          to   { opacity: 1; transform: translateX(0); }
+          from { opacity: 0; transform: translateX(30px) scale(0.96); }
+          to   { opacity: 1; transform: translateX(0) scale(1); }
         }
         @keyframes guide-step-prev {
-          from { opacity: 0; transform: translateX(-26px); }
-          to   { opacity: 1; transform: translateX(0); }
+          from { opacity: 0; transform: translateX(-30px) scale(0.96); }
+          to   { opacity: 1; transform: translateX(0) scale(1); }
         }
         .guide-step-next {
-          animation: guide-step-next 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation: guide-step-next 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
         .guide-step-prev {
-          animation: guide-step-prev 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation: guide-step-prev 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        /* Modal card spring-in on open. */
+        @keyframes guide-pop {
+          from { opacity: 0; transform: scale(0.93); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+        .guide-pop {
+          animation: guide-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
         /* First-run help button pulse — color and border drift to red and back. */
         @keyframes help-pulse {
@@ -2779,10 +2789,10 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
   const cur = steps[step];
   const Visual = cur.Visual;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-neutral-900/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-2xl border border-neutral-200 shadow-[0_12px_40px_rgba(0,0,0,0.16)] p-6">
+      <div className="guide-pop relative w-full max-w-md bg-white rounded-2xl border border-neutral-200 shadow-[0_12px_40px_rgba(0,0,0,0.16)] p-6">
         <div className="flex items-center justify-between mb-4">
           <span className="text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
             Guide · {step + 1}/{steps.length}
@@ -2816,7 +2826,7 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
             {steps.map((_, i) => (
               <span
                 key={i}
-                className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ${
+                className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ease-in-out ${
                   i === step ? "w-4 bg-neutral-900" : "w-1.5 bg-neutral-300"
                 }`}
               />
@@ -2849,7 +2859,8 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
