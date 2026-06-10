@@ -2295,19 +2295,12 @@ function TreePanel({
   const MAX_W = 520;
   const panelWidth = treeWidth;
   const [guideOpen, setGuideOpen] = useState(false);
-  // The help button pulses red until the guide has been opened once (persisted).
-  const [guideSeen, setGuideSeen] = useState(true);
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem("bough.guideSeen.v2")) setGuideSeen(false);
-    } catch {}
-  }, []);
+  // The help button pulses red until the guide is opened. Not persisted —
+  // a page refresh resets it, so it pulses again on every fresh load.
+  const [guideSeen, setGuideSeen] = useState(false);
   function openGuide() {
     setGuideOpen(true);
     setGuideSeen(true);
-    try {
-      localStorage.setItem("bough.guideSeen.v2", "1");
-    } catch {}
   }
 
   const startResize = (e) => {
