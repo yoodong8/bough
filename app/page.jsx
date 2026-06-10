@@ -2737,7 +2737,7 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
           <TreeOpenIcon className="w-[18px] h-[18px]" />
         </button>
       </div>
-      <div className="px-3 pt-3 pb-2 shrink-0">
+      <div className="relative px-3 pt-3 pb-2 shrink-0">
         <button
           onClick={onToggleCompare}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-md border text-sm transition ${
@@ -2749,12 +2749,15 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
           <span className="font-medium">분할 비교</span>
           <Toggle on={compareMode} />
         </button>
+        {/* Floated as an overlay so it never pushes the tree down. */}
         {compareMode && (
-          <div className="text-[11px] text-neutral-500 mt-2 px-1 leading-relaxed">
-            트리에서 비교할 두 점을 선택하세요{" "}
-            <span className="font-mono-ui text-neutral-900 tabular-nums">
-              ({compareCount}/2)
-            </span>
+          <div className="absolute left-3 right-3 top-full -mt-0.5 z-10 pointer-events-none">
+            <div className="text-[11px] text-neutral-500 leading-relaxed px-2.5 py-1.5 rounded-md bg-white/90 backdrop-blur-sm border border-neutral-200/70 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+              트리에서 비교할 두 점을 선택하세요{" "}
+              <span className="font-mono-ui text-neutral-900 tabular-nums">
+                ({compareCount}/2)
+              </span>
+            </div>
           </div>
         )}
       </div>
