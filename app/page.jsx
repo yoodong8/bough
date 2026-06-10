@@ -1269,6 +1269,10 @@ export default function App() {
     <div
       className="h-screen w-full flex bg-stone-50 text-neutral-900 overflow-hidden relative"
       style={{
+        // 100dvh tracks the visible viewport on iOS Safari so the composer
+        // isn't hidden behind the bottom toolbar; h-screen (100vh) is the
+        // fallback for browsers without dvh support.
+        height: "100dvh",
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         fontFamily:
