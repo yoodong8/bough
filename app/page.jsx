@@ -2207,23 +2207,19 @@ const Composer = forwardRef(function Composer(
             <ChevronDown className="w-3 h-3" />
           </button>
           <button
-            onClick={isTouchDevice ? undefined : onSend}
-            disabled={isTouchDevice ? false : disabled || !value.trim()}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-500 hover:bg-stone-100 hover:text-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition active:scale-[0.96]"
-            title={isTouchDevice ? "음성 입력" : "보내기 (Enter)"}
+            className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-500 hover:bg-stone-100 hover:text-neutral-900 transition active:scale-[0.96]"
+            title="음성 입력"
           >
             <Mic className="w-4 h-4" />
           </button>
-          {isTouchDevice && (
-            <button
-              onClick={onSend}
-              disabled={disabled || !value.trim()}
-              className="w-8 h-8 rounded-md flex items-center justify-center bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-stone-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition active:scale-[0.96]"
-              title="보내기"
-            >
-              <ArrowUp className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={onSend}
+            disabled={disabled || !value.trim()}
+            className="w-8 h-8 rounded-md flex items-center justify-center bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-stone-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition active:scale-[0.96]"
+            title="보내기"
+          >
+            <ArrowUp className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
