@@ -1321,6 +1321,15 @@ export default function App() {
         .icon-land {
           animation: pop-land 520ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
         }
+        /* Compare cards spring in (overshoot) and stagger — the "쫀득" pop
+           when the split view appears. */
+        @keyframes compare-card-in {
+          from { opacity: 0; transform: translateY(14px) scale(0.94); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .compare-card-in {
+          animation: compare-card-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
         @keyframes pop-glow {
           from { transform: scale(0); opacity: 0; }
           to   { transform: scale(1); opacity: 1; }
@@ -2904,7 +2913,8 @@ function CompareView({
           return (
             <div
               key={nodeId}
-              className="bg-white rounded-xl border border-neutral-200 flex flex-col min-h-0 flex-1 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+              className="compare-card-in bg-white rounded-xl border border-neutral-200 flex flex-col min-h-0 flex-1 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+              style={{ animationDelay: `${i * 90}ms` }}
             >
               <div className="px-5 pt-4 pb-3 border-b border-neutral-100 flex items-center gap-3">
                 <span className="font-mono-ui text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-medium">
