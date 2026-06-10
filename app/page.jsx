@@ -889,22 +889,11 @@ export default function App() {
     setTimeout(() => inputRef.current?.focus(), 30);
   }
 
-  // True when aiMsgId sits on the resolved path (root → converged leaf), so
-  // branching there would fork the converged thread.
-  function isOnConvergedPath(aiMsgId) {
-    if (!convergedLeafId) return false;
-    let cur = convergedLeafId;
-    while (cur) {
-      if (cur === aiMsgId) return true;
-      cur = activeConv.messages[cur]?.parentId;
-    }
-    return false;
-  }
-
-  // Entry point for the branch button: warn before forking a converged thread,
-  // otherwise branch straight away.
+  // Entry point for the branch button: if the thread being viewed contains a
+  // converged node, branching anywhere on it would compete with that resolved
+  // answer — warn first. Otherwise branch straight away.
   function requestBranch(aiMsgId) {
-    if (isOnConvergedPath(aiMsgId)) {
+    if (convergedLeafId && currentPathSet.has(convergedLeafId)) {
       setBranchWarnFor(aiMsgId);
     } else {
       startBranch(aiMsgId);
