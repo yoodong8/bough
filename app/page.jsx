@@ -2245,7 +2245,9 @@ const Composer = forwardRef(function Composer(
         placeholder="메시지를 입력하세요..."
         rows={1}
         disabled={disabled}
-        className="w-full ml-1 mt-0.5 bg-transparent resize-none outline-none overflow-hidden text-neutral-900 placeholder:text-neutral-400 text-[15px] leading-relaxed"
+        className={`w-full ml-1 mt-0.5 bg-transparent resize-none outline-none overflow-hidden text-neutral-900 placeholder:text-neutral-400 leading-relaxed ${
+          isTouchDevice ? "text-[16px]" : "text-[15px]"
+        }`}
         style={{ minHeight: "24px" }}
       />
       <div className="flex items-center justify-between mt-1.5">
