@@ -1330,6 +1330,14 @@ export default function App() {
         .compare-card-in {
           animation: compare-card-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
+        /* Onboarding step crossfade-slide on next/prev. */
+        @keyframes guide-step-in {
+          from { opacity: 0; transform: translateX(10px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        .guide-step-in {
+          animation: guide-step-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
         @keyframes pop-glow {
           from { transform: scale(0); opacity: 0; }
           to   { transform: scale(1); opacity: 1; }
@@ -2690,61 +2698,212 @@ function TreePanel({
       </button>
 
       {guideOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-neutral-900/30"
-            onClick={() => setGuideOpen(false)}
-          />
-          <div className="relative w-full max-w-md max-h-[80vh] overflow-y-auto bg-white rounded-2xl border border-neutral-200 shadow-[0_12px_40px_rgba(0,0,0,0.16)] p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[15px] font-medium text-neutral-900 tracking-tight">
-                Bough 사용 안내
-              </h3>
+        <OnboardingGuide
+          onClose={() => setGuideOpen(false)}
+          isTouchDevice={isTouchDevice}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Onboarding Guide — 4-step walkthrough with on-brand visuals
+// ============================================================
+function OnboardingGuide({ onClose, isTouchDevice }) {
+  const [step, setStep] = useState(0);
+
+  const steps = [
+    {
+      title: "브랜치 생성",
+      desc: "AI 답변 아래 ‘갈래치기’ 버튼을 누르면, 그 답변에서 새로운 방향으로 대화를 뻗어 나갈 수 있어요.",
+      Visual: BranchVisual,
+    },
+    {
+      title: "이동",
+      desc: "트리의 어떤 노드든 클릭하면 그 갈래로 이동해, 해당 대화 흐름을 이어서 볼 수 있어요.",
+      Visual: NavigateVisual,
+    },
+    {
+      title: "분할 비교",
+      desc: "‘분할 비교’를 켜고 트리에서 두 점을 선택하면, 두 갈래를 좌우로 나란히 펼쳐 비교할 수 있어요.",
+      Visual: CompareVisual,
+    },
+    {
+      title: "수렴 / 보류",
+      desc: `갈래 끝 점을 ${
+        isTouchDevice ? "길게 눌러" : "우클릭하여"
+      }, 결정한 방향은 ‘수렴(🍎)’으로, 잠시 치워둘 방향은 ‘보류’로 표시할 수 있어요.`,
+      Visual: ConvergeHoldVisual,
+    },
+  ];
+
+  const last = steps.length - 1;
+  const cur = steps[step];
+  const Visual = cur.Visual;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-neutral-900/30" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white rounded-2xl border border-neutral-200 shadow-[0_12px_40px_rgba(0,0,0,0.16)] p-6">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-[10px] uppercase tracking-[0.2em] font-mono-ui text-neutral-400 font-medium">
+            Guide · {step + 1}/{steps.length}
+          </span>
+          <button
+            onClick={onClose}
+            title="닫기"
+            className="-mr-1 p-1 text-neutral-400 hover:text-neutral-700 transition active:scale-[0.96]"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div key={step} className="guide-step-in">
+          <div className="rounded-xl bg-stone-50 border border-stone-200/80 mb-4 flex items-center justify-center h-[150px]">
+            <Visual />
+          </div>
+          <h3 className="text-[16px] font-medium text-neutral-900 tracking-tight mb-1.5">
+            {cur.title}
+          </h3>
+          <p className="text-[13px] text-neutral-500 leading-relaxed min-h-[40px]">
+            {cur.desc}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between mt-5">
+          <div className="flex items-center gap-1.5">
+            {steps.map((_, i) => (
+              <span
+                key={i}
+                className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ${
+                  i === step ? "w-4 bg-neutral-900" : "w-1.5 bg-neutral-300"
+                }`}
+              />
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            {step > 0 && (
               <button
-                onClick={() => setGuideOpen(false)}
-                title="닫기"
-                className="-mr-1 p-1 text-neutral-400 hover:text-neutral-700 transition active:scale-[0.96]"
+                onClick={() => setStep((s) => s - 1)}
+                className="px-3 h-9 rounded-md text-[13px] font-medium text-neutral-600 hover:bg-stone-100 transition active:scale-[0.96]"
               >
-                <X className="w-4 h-4" />
+                이전
               </button>
-            </div>
-            <div className="space-y-4">
-              {[
-                {
-                  t: "갈래치기",
-                  d: "AI 답변 아래 ‘갈래치기’ 버튼을 누르면 그 답변에서 새 방향으로 대화를 이어갈 수 있어요.",
-                },
-                {
-                  t: "이동",
-                  d: "트리의 노드를 클릭하면 그 갈래로 이동합니다.",
-                },
-                {
-                  t: "분할 비교",
-                  d: "‘분할 비교’를 켜고 트리에서 두 점을 선택하면 두 갈래를 나란히 비교해요.",
-                },
-                {
-                  t: "수렴 / 보류",
-                  d: `갈래 끝 점을 ${
-                    isTouchDevice ? "길게 눌러" : "우클릭하여"
-                  } 수렴(결정)하거나 보류(치워두기)로 표시할 수 있어요.`,
-                },
-              ].map(({ t, d }) => (
-                <div key={t} className="flex gap-3">
-                  <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-red-600 shrink-0" />
-                  <div>
-                    <div className="text-[13px] font-medium text-neutral-900 mb-0.5">
-                      {t}
-                    </div>
-                    <p className="text-[12px] text-neutral-500 leading-relaxed">
-                      {d}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            )}
+            {step < last ? (
+              <button
+                onClick={() => setStep((s) => s + 1)}
+                className="px-3 h-9 rounded-md text-[13px] font-medium bg-neutral-900 text-white hover:bg-neutral-800 transition active:scale-[0.96]"
+              >
+                다음
+              </button>
+            ) : (
+              <button
+                onClick={onClose}
+                className="px-3 h-9 rounded-md text-[13px] font-medium bg-neutral-900 text-white hover:bg-neutral-800 transition active:scale-[0.96]"
+              >
+                시작하기
+              </button>
+            )}
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+// On-brand mini illustrations for the onboarding steps. Palette mirrors the
+// tree: #171717 current, #d6d3d1 inactive, #dc2626 marked/red accent.
+function BranchVisual() {
+  return (
+    <svg viewBox="0 0 240 130" className="w-[240px] h-[130px]">
+      {/* trunk */}
+      <path d="M120 26 L120 64" stroke="#171717" strokeWidth="1.5" fill="none" />
+      <circle cx="120" cy="22" r="5" fill="#171717" />
+      <circle cx="120" cy="68" r="5" fill="#171717" />
+      {/* faded existing continuation */}
+      <path d="M120 72 C 120 92, 86 92, 86 108" stroke="#d6d3d1" strokeWidth="1.4" fill="none" />
+      <circle cx="86" cy="112" r="5" fill="#d6d3d1" />
+      {/* new red branch */}
+      <path d="M120 72 C 120 92, 168 92, 168 108" stroke="#dc2626" strokeWidth="1.6" fill="none" />
+      <circle cx="168" cy="112" r="5.5" fill="#dc2626" />
+      <circle cx="168" cy="112" r="9" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function NavigateVisual() {
+  return (
+    <svg viewBox="0 0 240 130" className="w-[240px] h-[130px]">
+      {/* active path (black) root → left leaf */}
+      <path d="M120 24 L120 58" stroke="#171717" strokeWidth="1.6" fill="none" />
+      <path d="M120 62 C 120 82, 78 82, 78 100" stroke="#171717" strokeWidth="1.6" fill="none" />
+      {/* inactive branch (gray) */}
+      <path d="M120 62 C 120 82, 168 82, 168 100" stroke="#d6d3d1" strokeWidth="1.4" fill="none" />
+      <circle cx="120" cy="22" r="5" fill="#525252" />
+      <circle cx="120" cy="60" r="5" fill="#525252" />
+      <circle cx="168" cy="104" r="5" fill="#d6d3d1" />
+      {/* clicked / active leaf */}
+      <circle cx="78" cy="104" r="8" fill="none" stroke="#171717" strokeOpacity="0.2" strokeWidth="1" />
+      <circle cx="78" cy="104" r="5.5" fill="#171717" />
+      {/* cursor */}
+      <g transform="translate(86, 110)" fill="#171717">
+        <path d="M0 0 L0 13 L3.4 9.6 L5.6 14 L7.4 13 L5.2 8.8 L10 8.8 Z" />
+      </g>
+    </svg>
+  );
+}
+
+function CompareVisual() {
+  return (
+    <svg viewBox="0 0 240 130" className="w-[240px] h-[130px]">
+      {/* two selected nodes (red ring) */}
+      <circle cx="78" cy="26" r="5" fill="#dc2626" />
+      <circle cx="78" cy="26" r="8.5" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
+      <circle cx="162" cy="26" r="5" fill="#dc2626" />
+      <circle cx="162" cy="26" r="8.5" fill="none" stroke="#dc2626" strokeOpacity="0.3" strokeWidth="1" />
+      {/* two compare cards */}
+      <g>
+        <rect x="40" y="50" width="72" height="62" rx="7" fill="#ffffff" stroke="#e7e5e4" />
+        <line x1="52" y1="66" x2="92" y2="66" stroke="#d6d3d1" strokeWidth="3" strokeLinecap="round" />
+        <line x1="52" y1="78" x2="100" y2="78" stroke="#e7e5e4" strokeWidth="3" strokeLinecap="round" />
+        <line x1="52" y1="90" x2="84" y2="90" stroke="#e7e5e4" strokeWidth="3" strokeLinecap="round" />
+      </g>
+      <g>
+        <rect x="128" y="50" width="72" height="62" rx="7" fill="#ffffff" stroke="#e7e5e4" />
+        <line x1="140" y1="66" x2="180" y2="66" stroke="#d6d3d1" strokeWidth="3" strokeLinecap="round" />
+        <line x1="140" y1="78" x2="188" y2="78" stroke="#e7e5e4" strokeWidth="3" strokeLinecap="round" />
+        <line x1="140" y1="90" x2="172" y2="90" stroke="#e7e5e4" strokeWidth="3" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
+function ConvergeHoldVisual() {
+  return (
+    <div className="flex items-center gap-12">
+      <div className="flex flex-col items-center gap-2.5">
+        <div className="w-11 h-11 rounded-full bg-red-600/10 flex items-center justify-center">
+          <AppleIcon
+            size={22}
+            bodyColor="#dc2626"
+            leafColor="#16a34a"
+            strokeWidth={1.5}
+          />
+        </div>
+        <span className="text-[11px] text-neutral-600 font-medium tracking-tight">
+          수렴
+        </span>
+      </div>
+      <div className="flex flex-col items-center gap-2.5">
+        <div className="w-11 h-11 rounded-full bg-stone-200/70 flex items-center justify-center">
+          <EyeOff className="w-[22px] h-[22px]" stroke="#a8a29e" strokeWidth={1.5} />
+        </div>
+        <span className="text-[11px] text-neutral-400 font-medium tracking-tight">
+          보류
+        </span>
+      </div>
     </div>
   );
 }
