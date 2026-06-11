@@ -3257,7 +3257,7 @@ function TreeHeader({
         ) : (
           !tipDismissed && (
             <div className="absolute left-3 right-3 top-full -mt-0.5 z-10 pointer-events-none">
-              <div className="flex items-start gap-2 text-[11px] text-neutral-500 leading-relaxed px-2.5 py-1.5 rounded-md bg-white/90 backdrop-blur-sm border border-neutral-200/70">
+              <div className="flex items-center gap-2 text-[11px] text-neutral-500 leading-relaxed px-2.5 py-1.5 rounded-md bg-white/90 backdrop-blur-sm border border-neutral-200/70">
                 <span className="flex-1">
                   갈래 끝 점을 {isTouchDevice ? "길게 눌러" : "우클릭 하여"}{" "}
                   보류·수렴 표시
@@ -3265,7 +3265,7 @@ function TreeHeader({
                 <button
                   onClick={() => setTipDismissed(true)}
                   title="닫기"
-                  className="pointer-events-auto -mr-0.5 -mt-0.5 p-0.5 text-neutral-400 hover:text-neutral-700 transition"
+                  className="pointer-events-auto shrink-0 -mr-0.5 p-0.5 text-neutral-400 hover:text-neutral-700 transition"
                 >
                   <X className="w-3 h-3" />
                 </button>
