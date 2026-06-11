@@ -2391,7 +2391,7 @@ function TreePanel({
           onHide={onHide}
         />
         <div className="flex-1 flex items-center justify-center pb-32 text-xs text-neutral-400 px-4 text-center">
-          대화를 시작하면 여기에 갈래가 그려져요.
+          대화를 시작하면 여기에 나무가 그려져요.
         </div>
         {helpUI}
       </div>
