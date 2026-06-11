@@ -2327,6 +2327,28 @@ function TreePanel({
     setGuideSeen(true);
   }
 
+  // Always-present help affordance — rendered in both the empty and populated
+  // tree states so the guide is reachable in any conversation.
+  const helpUI = (
+    <>
+      <button
+        onClick={openGuide}
+        title="사용 안내"
+        className={`absolute bottom-6 right-6 z-10 w-9 h-9 rounded-full bg-white border border-neutral-200 hover:border-neutral-300 flex items-center justify-center transition active:scale-[0.96] ${
+          guideSeen ? "text-neutral-500 hover:text-neutral-900" : "help-pulse"
+        }`}
+      >
+        <span className="text-[16px] font-semibold leading-none">?</span>
+      </button>
+      {guideOpen && (
+        <OnboardingGuide
+          onClose={() => setGuideOpen(false)}
+          isTouchDevice={isTouchDevice}
+        />
+      )}
+    </>
+  );
+
   const startResize = (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
@@ -2371,6 +2393,7 @@ function TreePanel({
         <div className="flex-1 flex items-center justify-center pb-32 text-xs text-neutral-400 px-4 text-center">
           대화를 시작하면 여기에 갈래가 그려져요.
         </div>
+        {helpUI}
       </div>
     );
   }
@@ -2735,25 +2758,7 @@ function TreePanel({
           })()}
       </div>
 
-      {/* Help — opens the centered guide on demand */}
-      <button
-        onClick={openGuide}
-        title="사용 안내"
-        className={`absolute bottom-6 right-6 z-10 w-9 h-9 rounded-full bg-white border border-neutral-200 hover:border-neutral-300 flex items-center justify-center transition active:scale-[0.96] ${
-          guideSeen
-            ? "text-neutral-500 hover:text-neutral-900"
-            : "help-pulse"
-        }`}
-      >
-        <span className="text-[16px] font-semibold leading-none">?</span>
-      </button>
-
-      {guideOpen && (
-        <OnboardingGuide
-          onClose={() => setGuideOpen(false)}
-          isTouchDevice={isTouchDevice}
-        />
-      )}
+      {helpUI}
     </div>
   );
 }
