@@ -516,6 +516,16 @@ export default function App() {
     [currentPath]
   );
 
+  // The AI answer at the very bottom of the active thread hides its branch
+  // button (you'd just keep typing); it reappears once a newer turn pushes it up.
+  const lastAiId = useMemo(() => {
+    for (let i = currentPath.length - 1; i >= 0; i--) {
+      const mm = activeConv.messages[currentPath[i]];
+      if (mm?.role === "assistant" && !mm.isSummary) return currentPath[i];
+    }
+    return null;
+  }, [currentPath, activeConv.messages]);
+
   const holdingSet = useMemo(() => {
     const out = new Set();
     const states = activeConv.nodeStates || {};
@@ -1614,6 +1624,7 @@ export default function App() {
                       onBranch={() => requestBranch(id)}
                       isPendingBranchSource={pendingBranchFromId === id}
                       onFeedbackThanks={showFeedbackThanks}
+                      hideBranch={id === lastAiId}
                     />
                     {sidecarEl}
                   </Fragment>
@@ -2007,6 +2018,7 @@ function MessageBlock({
   onSwitchBranch,
   isPendingBranchSource,
   onFeedbackThanks,
+  hideBranch,
 }) {
   if (message.role === "user") {
     let boxShadow, transition;
@@ -2144,14 +2156,25 @@ function MessageBlock({
             </div>
           );
         })}
-        <ActionButton
-          title="브랜치 생성"
-          onClick={onBranch}
-          highlighted={isPendingBranchSource}
-          hoverAccent
+        {/* Hidden on the bottom-most AI answer; springs open once a newer turn
+            pushes this answer up. Collapses via width/opacity/scale so it only
+            animates on the transition, not on initial render. */}
+        <span
+          className={`inline-flex overflow-hidden transition-[width,opacity,transform] duration-[360ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            hideBranch
+              ? "w-0 opacity-0 scale-75 pointer-events-none"
+              : "w-7 opacity-100 scale-100"
+          }`}
         >
-          <Split className="w-3.5 h-3.5 rotate-180" />
-        </ActionButton>
+          <ActionButton
+            title="브랜치 생성"
+            onClick={onBranch}
+            highlighted={isPendingBranchSource}
+            hoverAccent
+          >
+            <Split className="w-3.5 h-3.5 rotate-180" />
+          </ActionButton>
+        </span>
       </div>
     </div>
   );
