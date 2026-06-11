@@ -1480,7 +1480,7 @@ export default function App() {
             <div>
               <p className="text-xl mb-2 text-neutral-900 tracking-tight">새 대화를 시작해 보세요</p>
               <p className="text-sm text-neutral-500">
-                AI 메시지의 분기 아이콘을 누르면 새 갈래로 이어집니다.
+                AI 메시지의 브랜칭 아이콘을 누르면 새 갈래로 이어집니다.
               </p>
             </div>
           </div>
