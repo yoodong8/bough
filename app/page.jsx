@@ -1274,6 +1274,22 @@ export default function App() {
     setCompareNodes([]);
   }
 
+  // From a search result: switch to the conversation and, if the match was in
+  // a message, jump that thread to the matched message so the term is in view.
+  function openSearchResult(convId, messageId) {
+    setActiveConvId(convId);
+    setPendingBranchFromId(null);
+    setCompareMode(false);
+    setCompareNodes([]);
+    if (messageId) {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convId ? { ...c, activeLeafId: messageId } : c
+        )
+      );
+    }
+  }
+
   // ── Render ──
   return (
     <div
@@ -1424,6 +1440,8 @@ export default function App() {
             onSelect={setActiveConvId}
             onNewChat={startNewChat}
             onCollapse={() => setSidebarIntent(false)}
+            onOpenResult={openSearchResult}
+            isTouchDevice={isTouchDevice}
           />
         </div>
       )}
@@ -1782,6 +1800,8 @@ export default function App() {
             onSelect={setActiveConvId}
             onNewChat={startNewChat}
             onCollapse={() => setSidebarIntent(false)}
+            onOpenResult={openSearchResult}
+            isTouchDevice={isTouchDevice}
           />
         </div>
       )}
@@ -1895,7 +1915,46 @@ export default function App() {
 // ============================================================
 // Sidebar
 // ============================================================
-function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onCollapse }) {
+function SidebarPanel({
+  conversations,
+  activeConvId,
+  onSelect,
+  onNewChat,
+  onCollapse,
+  onOpenResult,
+  isTouchDevice,
+}) {
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+    if (searching) searchInputRef.current?.focus();
+  }, [searching]);
+
+  function exitSearch() {
+    setSearching(false);
+    setQuery("");
+  }
+
+  // Real-time matches across conversation titles and message contents.
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const out = [];
+    for (const c of conversations) {
+      const titleHit = (c.title || "").toLowerCase().includes(q);
+      let snippetMsg = null;
+      for (const m of Object.values(c.messages || {})) {
+        if (m.content && m.content.toLowerCase().includes(q)) {
+          snippetMsg = m;
+          break;
+        }
+      }
+      if (titleHit || snippetMsg) out.push({ conv: c, snippetMsg });
+    }
+    return out;
+  }, [query, conversations]);
+
   const recentItems = useMemo(() => {
     const dynamicTitles = new Set(conversations.map((c) => c.title));
     const realItems = conversations.map((c) => ({
@@ -1914,67 +1973,158 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
       className="shrink-0 bg-white border-r border-neutral-200 flex flex-col h-full"
       style={{ width: "260px" }}
     >
-      {/* Tab pill */}
-      <div className="px-3 pt-2.5 flex items-center gap-1">
-        <button
-          onClick={onCollapse}
-          className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
-          title="메뉴 닫기"
-        >
-          <PanelLeft className="w-4 h-4" />
-        </button>
-        <button className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition">
-          <Search className="w-4 h-4" />
-        </button>
-        <button className="flex-1 h-9 rounded-md bg-stone-100 border border-stone-200 flex items-center justify-center gap-1.5 text-sm text-neutral-900 font-medium">
-          <MessageSquare className="w-4 h-4" />
-          Chat
-        </button>
-        <button className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition">
-          <ListChecks className="w-4 h-4" />
-        </button>
-        <button className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition">
-          <Code2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Main items */}
-      <div className="px-3 mt-5 space-y-0.5 text-sm">
-        <button
-          onClick={onNewChat}
-          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-neutral-900 hover:bg-stone-100 transition"
-        >
-          <Plus className="w-4 h-4 text-neutral-500" />
-          <span>New chat</span>
-        </button>
-        <SidebarItem icon={<FolderOpen className="w-4 h-4" />} label="Projects" />
-        <SidebarItem icon={<Sparkles className="w-4 h-4" />} label="Artifacts" />
-        <SidebarItem icon={<Wrench className="w-4 h-4" />} label="Customize" />
-      </div>
-
-      {/* Recents */}
-      <div className="px-4 mt-6 mb-2 text-[10px] uppercase text-neutral-400 tracking-[0.2em] font-mono-ui font-medium flex items-center gap-2">
-        <span>Recents</span>
-        <span className="flex-1 h-px bg-neutral-200" />
-      </div>
-      <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5 text-sm">
-        {recentItems.map(({ key, title, conv }) => {
-          const isActive = conv && conv.id === activeConvId;
-          return (
+      {searching ? (
+        <>
+          {/* Search header — replaces the tab pill */}
+          <div className="px-3 pt-2.5 flex items-center gap-1.5">
             <button
-              key={key}
-              onClick={() => conv && onSelect(conv.id)}
-              className={`w-full text-left px-2.5 py-2 rounded-md truncate transition ${
-                isActive
-                  ? "bg-stone-100 text-neutral-900 font-medium"
-                  : "text-neutral-500 hover:text-neutral-900 hover:bg-stone-50"
-              }`}
+              onClick={exitSearch}
+              title="검색 닫기"
+              className="w-9 h-9 shrink-0 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition active:scale-[0.96]"
             >
-              {title}
+              <ChevronLeft className="w-4 h-4" />
             </button>
-          );
-        })}
-      </div>
+            <div className="flex-1 h-9 rounded-md bg-stone-100 border border-stone-200 flex items-center gap-2 pl-2.5 pr-1.5">
+              <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+              <input
+                ref={searchInputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="대화 검색"
+                className={`flex-1 min-w-0 bg-transparent outline-none text-neutral-900 placeholder:text-neutral-400 ${
+                  isTouchDevice ? "text-[16px]" : "text-sm"
+                }`}
+              />
+              {query && (
+                <button
+                  onClick={() => {
+                    setQuery("");
+                    searchInputRef.current?.focus();
+                  }}
+                  title="지우기"
+                  className="w-6 h-6 shrink-0 rounded flex items-center justify-center text-neutral-400 hover:text-neutral-700 transition"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Results — replaces everything below */}
+          <div className="flex-1 overflow-y-auto px-2 pt-3 pb-4 space-y-0.5 text-sm">
+            {query.trim() === "" ? (
+              <div className="px-3 py-6 text-center text-[12px] text-neutral-400 break-keep">
+                대화 제목과 내용에서 검색합니다.
+              </div>
+            ) : results.length === 0 ? (
+              <div className="px-3 py-6 text-center text-[12px] text-neutral-400 break-keep">
+                일치하는 대화가 없어요.
+              </div>
+            ) : (
+              results.map(({ conv, snippetMsg }) => {
+                const q = query.trim();
+                let snip = null;
+                if (snippetMsg) {
+                  const text = snippetMsg.content;
+                  const i = text.toLowerCase().indexOf(q.toLowerCase());
+                  const start = Math.max(0, i - 12);
+                  snip =
+                    (start > 0 ? "…" : "") +
+                    text.slice(start, start + 48).trim() +
+                    (start + 48 < text.length ? "…" : "");
+                }
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => {
+                      onOpenResult(conv.id, snippetMsg ? snippetMsg.id : null);
+                      exitSearch();
+                    }}
+                    className="w-full text-left px-2.5 py-2 rounded-md hover:bg-stone-100 transition"
+                  >
+                    <div className="text-neutral-900 font-medium truncate">
+                      {conv.title}
+                    </div>
+                    {snip && (
+                      <div className="mt-0.5 text-[12px] text-neutral-400 truncate">
+                        {snip}
+                      </div>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Tab pill */}
+          <div className="px-3 pt-2.5 flex items-center gap-1">
+            <button
+              onClick={onCollapse}
+              className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
+              title="메뉴 닫기"
+            >
+              <PanelLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setSearching(true)}
+              title="검색"
+              className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition active:scale-[0.96]"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+            <button className="flex-1 h-9 rounded-md bg-stone-100 border border-stone-200 flex items-center justify-center gap-1.5 text-sm text-neutral-900 font-medium">
+              <MessageSquare className="w-4 h-4" />
+              Chat
+            </button>
+            <button className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition">
+              <ListChecks className="w-4 h-4" />
+            </button>
+            <button className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition">
+              <Code2 className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Main items */}
+          <div className="px-3 mt-5 space-y-0.5 text-sm">
+            <button
+              onClick={onNewChat}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-neutral-900 hover:bg-stone-100 transition"
+            >
+              <Plus className="w-4 h-4 text-neutral-500" />
+              <span>New chat</span>
+            </button>
+            <SidebarItem icon={<FolderOpen className="w-4 h-4" />} label="Projects" />
+            <SidebarItem icon={<Sparkles className="w-4 h-4" />} label="Artifacts" />
+            <SidebarItem icon={<Wrench className="w-4 h-4" />} label="Customize" />
+          </div>
+
+          {/* Recents */}
+          <div className="px-4 mt-6 mb-2 text-[10px] uppercase text-neutral-400 tracking-[0.2em] font-mono-ui font-medium flex items-center gap-2">
+            <span>Recents</span>
+            <span className="flex-1 h-px bg-neutral-200" />
+          </div>
+          <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5 text-sm">
+            {recentItems.map(({ key, title, conv }) => {
+              const isActive = conv && conv.id === activeConvId;
+              return (
+                <button
+                  key={key}
+                  onClick={() => conv && onSelect(conv.id)}
+                  className={`w-full text-left px-2.5 py-2 rounded-md truncate transition ${
+                    isActive
+                      ? "bg-stone-100 text-neutral-900 font-medium"
+                      : "text-neutral-500 hover:text-neutral-900 hover:bg-stone-50"
+                  }`}
+                >
+                  {title}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Footer */}
       <div className="px-3 py-3 border-t border-neutral-200 flex items-center gap-2.5">
