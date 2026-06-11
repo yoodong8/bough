@@ -1437,7 +1437,7 @@ export default function App() {
         }`}
       >
         {/* Top bar */}
-        <div className="h-14 flex items-center px-4 sm:px-6 border-b border-neutral-200 shrink-0 gap-2 bg-stone-50/80 backdrop-blur-sm">
+        <div className="h-14 flex items-center px-4 border-b border-neutral-200 shrink-0 gap-2 bg-stone-50/80 backdrop-blur-sm">
           {!sidebarVisible && (
             <button
               onClick={() => setSidebarIntent(true)}
