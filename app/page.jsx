@@ -1400,6 +1400,22 @@ export default function App() {
         .help-pulse {
           animation: help-pulse 1.8s ease-in-out infinite;
         }
+        /* Sidebar search view easing in when search mode opens. */
+        @keyframes sidebar-search-in {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .sidebar-search-in {
+          animation: sidebar-search-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        /* Chat thread sliding in when you navigate to another conversation. */
+        @keyframes chat-switch-in {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .chat-switch-in {
+          animation: chat-switch-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
         @keyframes pop-glow {
           from { transform: scale(0); opacity: 0; }
           to   { transform: scale(1); opacity: 1; }
@@ -1517,7 +1533,10 @@ export default function App() {
             ref={chatScrollRef}
             className="flex-1 overflow-y-auto overscroll-contain px-6 lg:px-12 pt-8 flex flex-col"
           >
-            <div className="max-w-3xl mx-auto space-y-10 w-full mt-auto">
+            <div
+              key={activeConvId}
+              className="chat-switch-in max-w-3xl mx-auto space-y-10 w-full mt-auto"
+            >
               {currentPath.map((id, idx) => {
                 const m = activeConv.messages[id];
                 if (!m) return null;
@@ -1976,7 +1995,7 @@ function SidebarPanel({
       {searching ? (
         <>
           {/* Search header — replaces the tab pill */}
-          <div className="px-3 pt-2.5 flex items-center gap-1.5">
+          <div className="sidebar-search-in px-3 pt-2.5 flex items-center gap-1.5">
             <button
               onClick={exitSearch}
               title="검색 닫기"
@@ -1984,7 +2003,7 @@ function SidebarPanel({
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="flex-1 h-9 rounded-md bg-stone-100 border border-stone-200 flex items-center gap-2 pl-2.5 pr-1.5">
+            <div className="flex-1 min-w-0 h-9 rounded-md bg-stone-100 border border-stone-200 flex items-center gap-2 pl-2.5 pr-1.5">
               <Search className="w-4 h-4 text-neutral-400 shrink-0" />
               <input
                 ref={searchInputRef}
@@ -2011,7 +2030,7 @@ function SidebarPanel({
           </div>
 
           {/* Results — replaces everything below */}
-          <div className="flex-1 overflow-y-auto px-2 pt-3 pb-4 space-y-0.5 text-sm">
+          <div className="sidebar-search-in flex-1 overflow-y-auto px-2 pt-3 pb-4 space-y-0.5 text-sm">
             {query.trim() === "" ? (
               <div className="px-3 py-6 text-center text-[12px] text-neutral-400 break-keep">
                 대화 제목과 내용에서 검색합니다.
@@ -2036,11 +2055,14 @@ function SidebarPanel({
                 return (
                   <button
                     key={conv.id}
-                    onClick={() => {
-                      onOpenResult(conv.id, snippetMsg ? snippetMsg.id : null);
-                      exitSearch();
-                    }}
-                    className="w-full text-left px-2.5 py-2 rounded-md hover:bg-stone-100 transition"
+                    onClick={() =>
+                      onOpenResult(conv.id, snippetMsg ? snippetMsg.id : null)
+                    }
+                    className={`w-full text-left px-2.5 py-2 rounded-md transition ${
+                      conv.id === activeConvId
+                        ? "bg-stone-100"
+                        : "hover:bg-stone-100"
+                    }`}
                   >
                     <div className="text-neutral-900 font-medium truncate">
                       {conv.title}
