@@ -2643,6 +2643,7 @@ function TreePanel({
         onToggleCompare={onToggleCompare}
         compareCount={compareNodes.length}
         onHide={onHide}
+        isTouchDevice={isTouchDevice}
       />
       <div className="flex-1 overflow-auto px-3 pb-3 pt-6 relative select-none">
         <svg
@@ -3202,7 +3203,14 @@ function ConvergeHoldVisual() {
   );
 }
 
-function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
+function TreeHeader({
+  compareMode,
+  onToggleCompare,
+  compareCount,
+  onHide,
+  isTouchDevice,
+}) {
+  const [tipDismissed, setTipDismissed] = useState(false);
   return (
     <>
       <div className="h-14 flex items-center px-4 border-b border-neutral-200 gap-2 shrink-0">
@@ -3237,7 +3245,7 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
           <Toggle on={compareMode} />
         </button>
         {/* Floated as an overlay so it never pushes the tree down. */}
-        {compareMode && (
+        {compareMode ? (
           <div className="absolute left-3 right-3 top-full -mt-0.5 z-10 pointer-events-none">
             <div className="text-[11px] text-neutral-500 leading-relaxed px-2.5 py-1.5 rounded-md bg-white/90 backdrop-blur-sm border border-neutral-200/70 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
               트리에서 비교할 두 점을 선택하세요{" "}
@@ -3246,6 +3254,24 @@ function TreeHeader({ compareMode, onToggleCompare, compareCount, onHide }) {
               </span>
             </div>
           </div>
+        ) : (
+          !tipDismissed && (
+            <div className="absolute left-3 right-3 top-full -mt-0.5 z-10 pointer-events-none">
+              <div className="flex items-start gap-2 text-[11px] text-neutral-500 leading-relaxed px-2.5 py-1.5 rounded-md bg-white/90 backdrop-blur-sm border border-neutral-200/70">
+                <span className="flex-1">
+                  갈래 끝 점을 {isTouchDevice ? "길게 눌러" : "우클릭 하여"}{" "}
+                  보류·수렴 표시
+                </span>
+                <button
+                  onClick={() => setTipDismissed(true)}
+                  title="닫기"
+                  className="pointer-events-auto -mr-0.5 -mt-0.5 p-0.5 text-neutral-400 hover:text-neutral-700 transition"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )
         )}
       </div>
     </>
