@@ -2996,10 +2996,10 @@ function OnboardingGuide({ onClose, isTouchDevice }) {
       Visual: CompareVisual,
     },
     {
-      title: "수렴 / 보류",
+      title: "보류 / 수렴",
       desc: `갈래 끝 점을 ${
         isTouchDevice ? "길게 눌러" : "우클릭하여"
-      } 정한 방향은 ‘수렴’으로, 잠시 치워둘 방향은 ‘보류’로 표시할 수 있어요.`,
+      } 잠시 치워둘 방향은 ‘보류’로 표시하고, 정한 방향은 ‘수렴’으로 표시한 후 요약할 수 있어요.`,
       Visual: ConvergeHoldVisual,
     },
   ];
@@ -3179,6 +3179,14 @@ function ConvergeHoldVisual() {
   return (
     <div className="flex items-center gap-12">
       <div className="flex flex-col items-center gap-2.5">
+        <div className="w-11 h-11 rounded-full bg-stone-200/70 flex items-center justify-center">
+          <EyeOff className="w-[22px] h-[22px]" stroke="#a8a29e" strokeWidth={1.5} />
+        </div>
+        <span className="text-[11px] text-neutral-400 font-medium tracking-tight">
+          보류
+        </span>
+      </div>
+      <div className="flex flex-col items-center gap-2.5">
         <div className="w-11 h-11 rounded-full bg-red-600/10 flex items-center justify-center">
           <AppleIcon
             size={22}
@@ -3189,14 +3197,6 @@ function ConvergeHoldVisual() {
         </div>
         <span className="text-[11px] text-neutral-600 font-medium tracking-tight">
           수렴
-        </span>
-      </div>
-      <div className="flex flex-col items-center gap-2.5">
-        <div className="w-11 h-11 rounded-full bg-stone-200/70 flex items-center justify-center">
-          <EyeOff className="w-[22px] h-[22px]" stroke="#a8a29e" strokeWidth={1.5} />
-        </div>
-        <span className="text-[11px] text-neutral-400 font-medium tracking-tight">
-          보류
         </span>
       </div>
     </div>
