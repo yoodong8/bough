@@ -1915,7 +1915,7 @@ function SidebarPanel({ conversations, activeConvId, onSelect, onNewChat, onColl
       style={{ width: "260px" }}
     >
       {/* Tab pill */}
-      <div className="px-3 pt-4 flex items-center gap-1">
+      <div className="px-3 pt-2.5 flex items-center gap-1">
         <button
           onClick={onCollapse}
           className="w-9 h-9 rounded-md hover:bg-stone-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition"
